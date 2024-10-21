@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGIN PAGE</title>
+</head>
+
+<body>
+
+</body>
+
+</html>
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAZZ| LOGIN</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: rgb(183, 239, 239);
+            font-family: Arial, Helvetica, sans-serif;
+            background-image: url("{% static 'images/pharmacy2.jpg' %}");
+            background-size: cover;
+        }
+
+        .form-box {
+            font-size: large;
+            display: flex;
+            position: relative;
+            height: 60%;
+            width: 30%;
+            left: 2px;
+            border: 2px solid black;
+            border-radius: 20px;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: brightness(0.8) blur(15px);
+        }
+
+        .form-box h4 {
+            text-align: center;
+            color: white;
+            margin-top: -20px;
+            letter-spacing: 1.5px;
+        }
+
+        .form_input {
+            margin-bottom: 15px;
+        }
+
+        .form_input input {
+            font-weight: bold;
+            padding: 5px;
+            letter-spacing: 1px;
+            width: 100%;
+        }
+
+        button {
+            width: 107%;
+            height: 30px;
+            background-color: green;
+            border: none;
+            color: white;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        .alert {
+            margin-bottom: 3em;
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-box">
+
+        <form action="" method="POST">
+            {% for message in messages %}
+            <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+            <h4>LOGIN FORM</h4>
+            {% csrf_token %}
+            <div class="form_input"><input type="text" name="username" placeholder="Username"></div>
+            <div class="form_input"><input type="password" name="password" placeholder="Password"></div>
+            <button>LOGIN</button>
+        </form>
+    </div>
+</body>
+
+</html>

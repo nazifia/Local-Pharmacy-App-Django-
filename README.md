@@ -1,0 +1,1 @@
+"# Local-Pharmacy-App-Django-" 

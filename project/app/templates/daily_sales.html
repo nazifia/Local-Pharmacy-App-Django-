@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Search Sales</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'htmx/htmx.min.js' %}"></script>
+    <script src="{% static 'js/chart.min.js' %}"></script>
+    <style>
+        .container {
+
+            margin: 20px auto;
+            max-width: 1200px;
+            padding: 0 15px;
+        }
+
+        .chart-container {
+            margin-top: 50px;
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+</head>
+
+<body>
+    {% block content %}
+    <div class="container">
+        <a href="{{request.META.HTTP_REFERER}}" class="btn btn-outline-dark btn-sm">Back</a>
+        <div class="col-md-10 offset-md-1">
+            {% if daily_sales %}
+            <h1 class="col-md-8 offset-md-3">Daily Sales</h1>
+            <table class="table table-hover" style="box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+                <thead class="table-primary">
+                    <tr>
+                        <th scope="col">DAY</th>
+                        <th scope="col">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in daily_sales %}
+                    <tr>
+                        <td>{{ sale.day }}</td>
+                        <td>{{ sale.total_sales }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-10 offset-md-1  chart-container">
+            <canvas id="dailySalesChart"></canvas>
+        </div>
+
+
+
+
+        {% else %}
+        <h4>NO SALES FOR THE DAY</h4>
+
+        <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary form-control" style="width: 100%;">Go
+            Back</a>
+        {% endif %}
+
+    </div>
+    {% endblock %}
+
+
+
+
+    <script>
+        const dailySalesData = {
+            labels: [
+                {% for sale in daily_sales %}
+        "{{ sale.day }}",
+            {% endfor %}
+                ],
+        datasets: [{
+            label: 'Daily Sales Chart',
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)',
+                'rgba(255, 159, 64, 0.7)',
+                'rgba(201, 203, 207, 0.7)'
+            ], // Adjust the number of colors based on the number of days
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+            data: [
+                {% for sale in daily_sales %}
+                            {{ sale.total_sales }},
+        {% endfor %}
+        ]
+                }]
+            };
+
+        const dailySalesConfig = {
+            type: 'bar',
+            data: dailySalesData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        const dailySalesChart = new Chart(
+            document.getElementById('dailySalesChart'),
+            dailySalesConfig
+        );
+    </script>
+    <script src="https://unpkg.com/htmx.org@2.0.2"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'htmx/htmx.min.js' %}"></script>
+</body>
+
+</html>

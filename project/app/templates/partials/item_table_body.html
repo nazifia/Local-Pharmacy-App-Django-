@@ -1,0 +1,30 @@
+{% for item in items %}
+<tr>
+    <td>
+        <input type="checkbox" name="item_ids" value="{{ item.id }}">
+    </td>
+    <td>{{ item.name }}</td>
+    <td>{{ item.price }}</td>
+    <td>{{ item.stock_quantity }}</td>
+    <td>
+        <input type="number" name="quantities" min="1" max="{{ item.stock_quantity }}" value="1"
+            class="form-control input-sm" disabled>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="5" class="text-center">No items found</td>
+</tr>
+{% endfor %}
+
+
+
+<script>
+    // Enable quantity input only when the item is selected
+    document.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            const quantityInput = this.closest('tr').querySelector('input[type="number"]');
+            quantityInput.disabled = !this.checked;
+        });
+    });
+</script>

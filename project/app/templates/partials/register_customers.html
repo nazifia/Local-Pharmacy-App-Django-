@@ -1,0 +1,7 @@
+<form action="{% url 'register_customers' %}" method="post">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="Customer name..." class="form-control" required>
+    <input type="number" name="phone" placeholder="Phone number" class="form-control mt-3" required>
+    <input type="text" name="address" placeholder="Address" class="form-control mt-3" required>
+    <input type="submit" value="Register" class="btn btn-sm btn-success mt-3 ">
+</form>

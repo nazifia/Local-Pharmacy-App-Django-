@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .container {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        margin-top: 1em;
+    }
+
+    .col-md-8 {
+        width: 60em;
+        margin-left: 2em;
+    }
+
+    .col-md-8 button,
+    .col-md-8 a {
+        box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+
+
+    .side-nav {
+        width: 100px;
+        position: sticky;
+        top: 50px;
+        /* Make the side nav sticky and set the top offset */
+        height: calc(100vh - 50px);
+        margin-left: 2em;
+    }
+
+    .side-nav button,
+    .side-nav a {
+        margin: 10px;
+        width: 100px;
+        box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.2)
+    }
+</style>
+<div class="container">
+    <div class="side-nav">
+
+        <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal" type="button">Add
+            item</a>
+        <a class="btn btn-secondary btn-sm" href="{{ request.META.HTTP_REFERER }}">Back</a>
+    </div>
+
+    <div class="col-md-8 offset-4">
+
+        <input type="text" class="form-control mb-3" hx-get="{% url 'search_item' %}"
+            hx-trigger="keyup changed delay:300ms" hx-target="#item-list" placeholder="Search items..." name="search"
+            style="background-color: rgb(232, 253, 211);">
+
+        {% for message in messages %}
+        <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+
+        <table class="table table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">NAME</th>
+                    <th scope="col">U/PRICE</th>
+                    <th scope="col">STOCK </th>
+                    <th scope="col">EXP DATE</th>
+                </tr>
+            </thead>
+            <tbody id="item-list">
+                {% for item in items %}
+                <tr>
+                    <td><a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editItemModal"
+                            hx-get="{% url 'edit_item' item.id %}" hx-target="#editItemModal .modal-content">Edit</a>
+
+                        <a href="{% url 'delete_item' item.id %}"
+                            onclick="return confirm('Are you sure you want to delete {{item.name|title}} from Store?')"
+                            class="btn btn-sm btn-danger">x</a>
+                    </td>
+                    <td>{{item.name}}</td>
+                    <td>{{item.price}}</td>
+                    <td>{{item.stock_quantity}}</td>
+                    <td>{{item.exp_date}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+    </div>
+
+    <!-- Add Item to Store Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>ADD NEW ITEM</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{% url 'add_item' %}" method="post">
+                        {% csrf_token %}
+                        <input type="text" name="name" placeholder="ITEM NAME" class="form-control mt-3" required>
+                        <input type="number" name="price" placeholder="ITEM PRICE" class="form-control mt-3" required>
+                        <input type="number" name="stock_quantity" placeholder="STOCK QUANTITY"
+                            class="form-control mt-3" required>
+                        <input type="date" name="exp_date" value="{{ item.exp_date|date:'Y-m-d'}}"
+                            class="form-control mt-3" required>
+                        <input type="submit" class="btn btn-success btn-sm mt-3" value="Save">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-label="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+        </div>
+    </div>
+</div>
+{% endblock %}

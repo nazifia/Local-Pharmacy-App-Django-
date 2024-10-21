@@ -1,0 +1,22 @@
+<form method="POST" hx-post="{% url 'dispense' %}" hx-target="#dispenseModal .modal-body">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success float-end btn-sm">Search</button>
+</form>
+<br>
+{% if results %}
+<h5>Search Results:</h5>
+<ul class="list-group">
+    {% for item in results %}
+    <li class="list-group-item">
+        <form method="POST" action="{% url 'add_to_cart' item.id %}">
+            {% csrf_token %}
+            {{ item.name }}
+            <input type="number" name="quantity" min="1" value="1" style="width: 60px;" id="quantity-{{ item.id }}">
+            {{ item.stock_quantity}} Available
+            <button class="btn btn-primary btn-sm float-end" type="submit">Add to Cart</button>
+        </form>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}

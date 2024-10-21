@@ -1,0 +1,95 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-info">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">LOGO</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="{% url 'store' %}">Store</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'cart' %}">Dispense</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Dropdown
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{% url 'reports' %}">Reports</a></li>
+                        <li><a class="dropdown-item" href="{% url 'manage_customers' %}">Manage Customers</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'admin:index' %}">Add New User</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav mb-2 mb-lg-0 ms-auto">
+                {% if user.is_authenticated %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        {{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'edit_user_profile' %}"
+                                hx-get="{% url 'edit_user_profile' %}" hx-target="#editUserProfileModal .modal-content"
+                                data-bs-toggle="modal" data-bs-target="#editUserProfileModal">Edit Profile</a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item" href="{% url 'change_user_password' %}"
+                                hx-get="{% url 'change_user_password' %}"
+                                hx-target="#changeUserPasswordModal .modal-content" data-bs-toggle="modal"
+                                data-bs-target="#changeUserPasswordModal">Change Password</a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item" href="{% url 'logout_user' %}">Logout</a>
+                        </li>
+                    </ul>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="">Login</a>
+                </li>
+
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+
+    <!--Edit User Profile Modal -->
+    <div class="modal fade" id="editUserProfileModal" tabindex="-1" aria-labelledby="editUserProfileModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+            </div>
+        </div>
+    </div>
+
+
+
+    <!--Change User Password Modal -->
+    <div class="modal fade" id="changeUserPasswordModal" tabindex="-1" aria-label="changeUserPasswordModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+            </div>
+        </div>
+    </div>
+</nav>

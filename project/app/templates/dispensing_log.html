@@ -1,0 +1,42 @@
+{% block content %}
+
+
+<div class="col-md-8 offset-md-3" id="main">
+
+    <h3 class="col-md-8 offset-md-3">Dispensing Logs</h3>
+
+
+    <!-- Add the date picker with HTMX -->
+    <form method="GET" action="" hx-get="{% url 'dispensing_log' %}" hx-target="#logsTable" hx-swap="outerHTML">
+        <input type="date" name="date" id="searchDate" class="form-control" value="{{ request.GET.date|default:'' }}"
+            style="background-color: rgb(196, 253, 253);">
+        <input type="submit" class="btn btn-primary btn-sm mb-3 mt-1" value="Search by Date">
+    </form>
+
+
+    <table class="table table-hover " style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);">
+        <thead class="table-primary">
+            <tr>
+                <th scope="col">User</th>
+                <th scope="col">Item Name</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Rate</th>
+                <th scope="col">Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="logsTable">
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.user|title }}</td>
+                <td>{{ log.name|title }}</td>
+                <td>{{ log.quantity }}</td>
+                <td>{{ log.amount }}</td>
+                <td>{{ log.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

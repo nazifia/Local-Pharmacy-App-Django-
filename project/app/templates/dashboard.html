@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    .statistics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 4em;
+    }
+
+    .bar-chart,
+    .pie-chart {
+        height: 80vh;
+        border: 1px solid grey;
+        background-color: transparent;
+        border-radius: 5px;
+        backdrop-filter: blur(10px);
+        padding: 10px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div
+    style="background-image: url({% static 'images/Pharmacists.jpg' %}); height: 100vh; background-size: cover; background-position: center;">
+    <h2 class="col-md-6 offset-md-4">WELCOME TO NAZZ PHARMACY</h2>
+    <br>
+    {% if user.is_superuser %}
+    <div class="statistics">
+        <div class="bar-chart">
+            <canvas id="dailySalesChart"></canvas>
+        </div>
+        <div class="pie-chart">
+            <canvas id="monthlySalesChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Include Chart.js and HTMX -->
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script src="https://unpkg.com/htmx.org@1.9.0"></script>
+<script>
+    // Function to render daily sales chart
+    function renderDailySalesChart(data) {
+        const labels = data.map(item => new Date(item.day).toLocaleDateString());
+        const sales = data.map(item => item.total_sales);
+
+        const dailySalesData = {
+            labels: labels,
+            datasets: [{
+                label: 'Daily Sales',
+                data: sales,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const dailySalesConfig = {
+            type: 'bar',
+            data: dailySalesData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        const dailySalesCtx = document.getElementById('dailySalesChart').getContext('2d');
+        new Chart(dailySalesCtx, dailySalesConfig);
+    }
+
+    // Function to render monthly sales chart
+    function renderMonthlySalesChart(data) {
+        const labels = data.map(item => new Date(item.month).toLocaleString('default', { month: 'long' }));
+        const sales = data.map(item => item.total_sales);
+
+        const monthlySalesData = {
+            labels: labels,
+            datasets: [{
+                label: 'Monthly Sales',
+                data: sales,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)',
+                    'rgba(201, 203, 207, 0.6)',
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
+                ],
+                hoverOffset: 4
+            }]
+        };
+
+        const monthlySalesConfig = {
+            type: 'pie',
+            data: monthlySalesData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        };
+
+        const monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
+        new Chart(monthlySalesCtx, monthlySalesConfig);
+    }
+
+    // Fetch and render sales data using HTMX
+    document.addEventListener('DOMContentLoaded', function () {
+        htmx.ajax('GET', '{% url "daily_sales" %}', '#dailySalesChart', function (response) {
+            renderDailySalesChart(response.daily_sales);
+        });
+
+        htmx.ajax('GET', '{% url "monthly_sales" %}', '#monthlySalesChart', function (response) {
+            renderMonthlySalesChart(response.monthly_sales);
+        });
+    });
+</script>
+{% endblock %}

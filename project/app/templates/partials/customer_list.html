@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer List</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'htmx/htmx.min.js' %}"></script>
+</head>
+
+<body>
+    {% block content %}
+    <style>
+        .col-md-8 {
+            margin-left: 14em;
+            margin-top: 30px;
+        }
+    </style>
+
+    <div class="col-md-8">
+        <a href="{% url 'manage_customers' %}" class="btn btn-sm btn-outline-dark mb-3">Back</a>
+        {% for message in messages %}
+        <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        <h2 style="text-align: center;">CUSTOMERS LIST</h2>
+        <table class="table table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th scope="col">SN</th>
+                    <th scope="col">WALLET</th>
+                    <th scope="col">CUSTOMERS</th>
+                    <th scope="col">PHONE</th>
+                    <th scope="col">ADDRESS</th>
+                    <th scope="col">ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ forloop.counter }}.</td>
+                    <td>
+                        <a href="{% url 'wallet_details' customer.id %}" hx-get="{% url 'wallet_details' customer.id %}"
+                            hx-target="#wallet-info" hx-trigger="click" class="btn btn-success btn-sm">Wallet</a>
+                    </td>
+                    <td>{{ customer.name }}</td>
+                    <td>{{ customer.phone }}</td>
+                    <td>{{ customer.address }}</td>
+                    <td>
+                        <a type="button" class="btn btn-sm btn-primary" hx-get="{% url 'select_items' customer.id %}"
+                            hx-target="#item-selection" hx-swap="innerHTML">Select item</a>
+
+                        <a href="{% url 'delete_customer' customer.id %}" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Are you sure you want to delete {{customer.name}} from the List?')">x</a>
+
+                        <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editCustomerModal"
+                            hx-get="{% url 'edit_customer' customer.id %}"
+                            hx-target="#editCustomerModal .modal-content">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div id="wallet-info"></div> <!-- Display wallet details here -->
+        <div id="item-selection"></div> <!-- Display item selection form here -->
+    </div>
+
+
+    <div class="modal fade" id="editCustomerModal" tabindex="-1" aria-label="editCustomerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+</body>
+
+</html>

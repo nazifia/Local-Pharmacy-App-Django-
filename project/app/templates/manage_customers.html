@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'htmx/htmx.min.js' %}"></script>
+</head>
+
+<body>
+    {% block content %}
+    <style>
+        .container {
+            justify-content: space-between;
+            width: 1200px;
+        }
+
+        .links {
+            width: 200px;
+            position: fixed;
+            background-color: rgb(239, 238, 238);
+            height: calc(100vh - 45px);
+            margin-right: 10px;
+        }
+
+        .links a {
+            text-decoration: none;
+        }
+
+        .links li {
+            list-style: none;
+            margin: 10px;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+    <div class="links">
+        <ul>
+            <li>
+                <a href="" data-bs-toggle="modal" data-bs-target="#registerCustomerModal"
+                    hx-get="{% url 'register_customers' %}" hx-target="{% url 'register_customers' %}"
+                    hx-trigger="click">Register Customer</a>
+            </li>
+
+            <li>
+                <a href="{% url 'customer_list' %}" hx-get="{% url 'customer_list' %}" hx-target="#display">Customer
+                    List</a>
+            </li>
+
+            <li>
+                <a href="{% url 'customers_on_negative' %}" hx-get="{% url 'customers_on_negative' %}"
+                    hx-target="#display">Customers On Neg</a>
+            </li>
+
+        </ul>
+    </div>
+    <div class="container">
+        <div id="display">
+            <!-- Sales data will be loaded here dynamically via HTMX -->
+            <h3 style="text-align: center;">Click on the link for info</h3>
+        </div>
+    </div>
+
+
+
+
+
+    <div class="modal fade" id="registerCustomerModal" tabindex="-1" aria-labelledby="registerCustomerModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>REGISTER CUSTOMER</h3>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{% url 'register_customers' %}" method="post">
+                        {% csrf_token %}
+                        <input type="text" name="name" placeholder="Customer name..." class="form-control" required>
+                        <input type="number" name="phone" placeholder="Phone number" class="form-control mt-3" required>
+                        <input type="text" name="address" placeholder="Address" class="form-control mt-3" required>
+                        <input type="submit" value="Register" class="btn btn-sm btn-success mt-3 ">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+</body>
+
+</html>
