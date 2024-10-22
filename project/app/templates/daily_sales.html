@@ -11,7 +11,6 @@
     <script src="{% static 'js/chart.min.js' %}"></script>
     <style>
         .container {
-
             margin: 20px auto;
             max-width: 1200px;
             padding: 0 15px;
@@ -22,8 +21,50 @@
             width: 100%;
             height: 400px;
         }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+                padding: 0 10px;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 0 5px;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            h1 {
+                font-size: 1.2rem;
+                text-align: center;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            .btn {
+                font-size: 0.8rem;
+            }
+        }
     </style>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 </head>
 
 <body>
@@ -50,25 +91,16 @@
                 </tbody>
             </table>
         </div>
-        <div class="col-md-10 offset-md-1  chart-container">
+        <div class="col-md-10 offset-md-1 chart-container">
             <canvas id="dailySalesChart"></canvas>
         </div>
-
-
-
-
         {% else %}
         <h4>NO SALES FOR THE DAY</h4>
-
         <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary form-control" style="width: 100%;">Go
             Back</a>
         {% endif %}
-
     </div>
     {% endblock %}
-
-
-
 
     <script>
         const dailySalesData = {
@@ -76,7 +108,7 @@
                 {% for sale in daily_sales %}
         "{{ sale.day }}",
             {% endfor %}
-                ],
+            ],
         datasets: [{
             label: 'Daily Sales Chart',
             backgroundColor: [
@@ -87,16 +119,16 @@
                 'rgba(153, 102, 255, 0.7)',
                 'rgba(255, 159, 64, 0.7)',
                 'rgba(201, 203, 207, 0.7)'
-            ], // Adjust the number of colors based on the number of days
+            ],
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1,
             data: [
                 {% for sale in daily_sales %}
-                            {{ sale.total_sales }},
+                    {{ sale.total_sales }},
         {% endfor %}
         ]
-                }]
-            };
+            }]
+        };
 
         const dailySalesConfig = {
             type: 'bar',
@@ -115,6 +147,7 @@
             dailySalesConfig
         );
     </script>
+
     <script src="https://unpkg.com/htmx.org@2.0.2"></script>
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'htmx/htmx.min.js' %}"></script>

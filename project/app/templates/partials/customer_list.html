@@ -15,12 +15,12 @@
     {% block content %}
     <style>
         .col-md-8 {
-            margin-left: 14em;
+            margin-left: 10em;
             margin-top: 30px;
         }
     </style>
 
-    <div class="col-md-8">
+    <div class="col-md-8 offset-md-0">
         <a href="{% url 'manage_customers' %}" class="btn btn-sm btn-outline-dark mb-3">Back</a>
         {% for message in messages %}
         <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>

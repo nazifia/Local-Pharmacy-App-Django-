@@ -70,8 +70,48 @@
         </div>
     </div>
 
+    <!-- Media Queries for Navbar -->
+    <style>
+        /* For tablets and smaller devices */
+        @media (max-width: 768px) {
+            .navbar-nav {
+                flex-direction: column;
+            }
 
-    <!--Edit User Profile Modal -->
+            .navbar-collapse {
+                text-align: center;
+            }
+
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* For mobile devices */
+        @media (max-width: 480px) {
+            .navbar-brand {
+                font-size: 1rem;
+            }
+
+            .navbar-nav .nav-link {
+                font-size: 0.9rem;
+            }
+
+            .navbar-collapse {
+                text-align: left;
+            }
+
+            .dropdown-menu {
+                font-size: 0.8rem;
+            }
+
+            .navbar-toggler {
+                margin-right: 0;
+            }
+        }
+    </style>
+
+    <!-- Edit User Profile Modal -->
     <div class="modal fade" id="editUserProfileModal" tabindex="-1" aria-labelledby="editUserProfileModalLabel"
         aria-hidden="true">
         <div class="modal-dialog">
@@ -81,10 +121,8 @@
         </div>
     </div>
 
-
-
-    <!--Change User Password Modal -->
-    <div class="modal fade" id="changeUserPasswordModal" tabindex="-1" aria-label="changeUserPasswordModalLabel"
+    <!-- Change User Password Modal -->
+    <div class="modal fade" id="changeUserPasswordModal" tabindex="-1" aria-labelledby="changeUserPasswordModalLabel"
         aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">

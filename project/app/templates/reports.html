@@ -18,7 +18,6 @@
         .container {
             justify-content: space-between;
             width: 1200px;
-
         }
 
         .links {
@@ -43,6 +42,57 @@
             width: 100%;
             height: 400px;
         }
+
+        /* Media query for tablets */
+        @media (max-width: 768px) {
+            .container {
+                width: 100%;
+                padding: 0 20px;
+            }
+
+            .links {
+                width: 150px;
+                position: relative;
+                height: auto;
+                margin-bottom: 20px;
+            }
+
+            .links li {
+                font-size: 14px;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        /* Media query for mobile devices */
+        @media (max-width: 480px) {
+            .container {
+                display: block;
+                width: 100%;
+                padding: 0 10px;
+            }
+
+            .links {
+                width: 100%;
+                margin-bottom: 20px;
+                height: auto;
+            }
+
+            .links li {
+                font-size: 12px;
+                margin: 5px;
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+
+            h3 {
+                font-size: 16px;
+            }
+        }
     </style>
     <div class="links">
         <ul>
@@ -51,12 +101,10 @@
                     hx-target="#sales-data">Dispensing
                     Logs</a>
             </li>
-
             <li>
                 <a href="{% url 'exp_date_alert' %}" hx-get="{% url 'exp_date_alert' %}" hx-target="#sales-data">Expiry
                     Alert</a>
             </li>
-
             <li><a href="{% url 'daily_sales' %}">Daily Sales</a></li>
             <li><a href="{% url 'monthly_sales' %}">Monthly Sales</a></li>
         </ul>

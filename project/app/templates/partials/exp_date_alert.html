@@ -27,6 +27,45 @@
             width: 100%;
             margin-left: 2rem;
         }
+
+        /* Media Queries */
+        @media (max-width: 992px) {
+            .box {
+                grid-template-columns: 1fr;
+                /* Stack columns on medium screens */
+                margin-left: 5%;
+                /* Adjust margin for smaller screens */
+            }
+
+            .near_exp,
+            .expired {
+                margin-left: 0;
+                /* Remove left margin for smaller screens */
+            }
+        }
+
+        @media (max-width: 576px) {
+            .box {
+                margin-left: 0;
+                /* Remove left margin for extra small screens */
+            }
+
+            h3 {
+                font-size: 1.5rem;
+                /* Adjust heading size */
+            }
+
+            .table {
+                font-size: 0.9rem;
+                /* Adjust table font size */
+            }
+
+            .near_exp,
+            .expired {
+                margin-left: 0;
+                /* Remove left margin */
+            }
+        }
     </style>
     <div class="box">
         <div class="near_exp">
@@ -54,7 +93,6 @@
             <p class="col-md-10 offset-md-1">No items are nearing expiration within the next 90 days.</p>
             {% endif %}
         </div>
-
 
         <div class="expired">
             <h3>Expired Item(s)</h3>

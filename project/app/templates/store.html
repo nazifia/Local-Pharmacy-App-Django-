@@ -17,8 +17,6 @@
         box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     }
 
-
-
     .side-nav {
         width: 100px;
         position: sticky;
@@ -32,19 +30,77 @@
     .side-nav a {
         margin: 10px;
         width: 100px;
-        box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.2)
+        box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Media query for tablet screens */
+    @media (max-width: 768px) {
+        .container {
+            grid-template-columns: 1fr;
+            /* Make the layout single-column */
+        }
+
+        .col-md-8 {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .side-nav {
+            width: 100%;
+            margin-left: 0;
+            margin-bottom: 1em;
+        }
+
+        .side-nav button,
+        .side-nav a {
+            width: 100%;
+        }
+    }
+
+    /* Media query for mobile screens */
+    @media (max-width: 480px) {
+        .container {
+            grid-template-columns: 1fr;
+            margin-top: 0.5em;
+        }
+
+        .col-md-8 {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .side-nav {
+            position: relative;
+            width: 100%;
+            height: auto;
+        }
+
+        .side-nav button,
+        .side-nav a {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        table {
+            font-size: 0.8em;
+            /* Reduce table font size for smaller screens */
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5em;
+        }
     }
 </style>
+
 <div class="container">
     <div class="side-nav">
-
         <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal" type="button">Add
             item</a>
         <a class="btn btn-secondary btn-sm" href="{{ request.META.HTTP_REFERER }}">Back</a>
     </div>
 
     <div class="col-md-8 offset-4">
-
         <input type="text" class="form-control mb-3" hx-get="{% url 'search_item' %}"
             hx-trigger="keyup changed delay:300ms" hx-target="#item-list" placeholder="Search items..." name="search"
             style="background-color: rgb(232, 253, 211);">
@@ -59,16 +115,16 @@
                     <th scope="col">ID</th>
                     <th scope="col">NAME</th>
                     <th scope="col">U/PRICE</th>
-                    <th scope="col">STOCK </th>
+                    <th scope="col">STOCK</th>
                     <th scope="col">EXP DATE</th>
                 </tr>
             </thead>
             <tbody id="item-list">
                 {% for item in items %}
                 <tr>
-                    <td><a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editItemModal"
+                    <td>
+                        <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editItemModal"
                             hx-get="{% url 'edit_item' item.id %}" hx-target="#editItemModal .modal-content">Edit</a>
-
                         <a href="{% url 'delete_item' item.id %}"
                             onclick="return confirm('Are you sure you want to delete {{item.name|title}} from Store?')"
                             class="btn btn-sm btn-danger">x</a>
@@ -81,8 +137,6 @@
                 {% endfor %}
             </tbody>
         </table>
-
-
     </div>
 
     <!-- Add Item to Store Modal -->
@@ -110,15 +164,10 @@
     </div>
 </div>
 
-
-
-
 <!-- Edit Item Modal -->
 <div class="modal fade" id="editItemModal" tabindex="-1" aria-label="editItemModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
-
-        </div>
+        <div class="modal-content"></div>
     </div>
 </div>
 {% endblock %}

@@ -19,6 +19,33 @@
         padding: 10px;
         box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
     }
+
+    /* Media query for tablets and smaller screens */
+    @media (max-width: 768px) {
+        .statistics {
+            grid-template-columns: 1fr;
+            /* Stacks the charts vertically */
+        }
+
+        .bar-chart,
+        .pie-chart {
+            height: 60vh;
+        }
+    }
+
+    /* Media query for mobile screens */
+    @media (max-width: 480px) {
+
+        .bar-chart,
+        .pie-chart {
+            height: 40vh;
+            padding: 5px;
+        }
+
+        h2 {
+            font-size: 1.5em;
+        }
+    }
 </style>
 
 <div

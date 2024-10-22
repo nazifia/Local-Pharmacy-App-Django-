@@ -1,10 +1,75 @@
 {% block content %}
+<style>
+    /* Default styles for the main container */
+    #main {
+        margin-top: 30px;
+        /* Space from the top */
+    }
 
+    /* Media Queries */
+    @media (max-width: 992px) {
+        #main {
+            margin-left: 10px;
+            /* Adjust left margin for medium screens */
+            margin-right: 10px;
+            /* Adjust right margin for medium screens */
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            /* Adjust heading size */
+        }
+
+        .table {
+            font-size: 0.95rem;
+            /* Adjust table font size for better fit */
+        }
+
+        .btn {
+            font-size: 0.85rem;
+            /* Adjust button font size */
+        }
+    }
+
+    @media (max-width: 768px) {
+        #main {
+            margin-left: 0;
+            /* Remove left margin for small screens */
+            margin-right: 0;
+            /* Remove right margin for small screens */
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            /* Further adjust heading size */
+        }
+
+        .table {
+            font-size: 0.9rem;
+            /* Further reduce table font size */
+        }
+
+        .btn {
+            font-size: 0.8rem;
+            /* Adjust button font size */
+        }
+    }
+
+    @media (max-width: 576px) {
+        h3 {
+            font-size: 1.3rem;
+            /* Further adjust heading size */
+        }
+
+        .table {
+            font-size: 0.85rem;
+            /* Further reduce table font size */
+        }
+    }
+</style>
 
 <div class="col-md-8 offset-md-3" id="main">
-
     <h3 class="col-md-8 offset-md-3">Dispensing Logs</h3>
-
 
     <!-- Add the date picker with HTMX -->
     <form method="GET" action="" hx-get="{% url 'dispensing_log' %}" hx-target="#logsTable" hx-swap="outerHTML">
@@ -13,8 +78,7 @@
         <input type="submit" class="btn btn-primary btn-sm mb-3 mt-1" value="Search by Date">
     </form>
 
-
-    <table class="table table-hover " style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);">
+    <table class="table table-hover" style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);">
         <thead class="table-primary">
             <tr>
                 <th scope="col">User</th>
@@ -36,7 +100,6 @@
             {% endfor %}
         </tbody>
     </table>
-
 </div>
 
 {% endblock %}
