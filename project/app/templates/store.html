@@ -97,7 +97,14 @@
     <div class="side-nav">
         <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal" type="button">Add
             item</a>
+
         <a class="btn btn-secondary btn-sm" href="{{ request.META.HTTP_REFERER }}">Back</a>
+        {% if request.user.is_superuser %}
+        <p>Total Purchase Value: <strong>₦{{ total_purchase_value }}</strong></p>
+        <p>Total Stock Value: <strong>₦{{ total_stock_value }}</strong></p>
+        <p>Total Profit: <strong>₦{{ total_profit }}</strong></p>
+        {% endif %}
+
     </div>
 
     <div class="col-md-8 offset-4">
@@ -114,7 +121,10 @@
                 <tr>
                     <th scope="col">ID</th>
                     <th scope="col">NAME</th>
-                    <th scope="col">U/PRICE</th>
+                    {% if user.is_superuser %}
+                    <th scope="col">COST</th>
+                    {% endif %}
+                    <th scope="col">S/PRICE</th>
                     <th scope="col">STOCK</th>
                     <th scope="col">EXP DATE</th>
                 </tr>
@@ -125,11 +135,19 @@
                     <td>
                         <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editItemModal"
                             hx-get="{% url 'edit_item' item.id %}" hx-target="#editItemModal .modal-content">Edit</a>
+
+                        <a class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#returnItemModal"
+                            hx-get="{% url 'return_item' item.id %}"
+                            hx-target="#returnItemModal .modal-content">Return</a>
+
                         <a href="{% url 'delete_item' item.id %}"
                             onclick="return confirm('Are you sure you want to delete {{item.name|title}} from Store?')"
                             class="btn btn-sm btn-danger">x</a>
                     </td>
                     <td>{{item.name}}</td>
+                    {% if user.is_superuser %}
+                    <td>{{item.cost}}</td>
+                    {% endif %}
                     <td>{{item.price}}</td>
                     <td>{{item.stock_quantity}}</td>
                     <td>{{item.exp_date}}</td>
@@ -151,6 +169,7 @@
                     <form action="{% url 'add_item' %}" method="post">
                         {% csrf_token %}
                         <input type="text" name="name" placeholder="ITEM NAME" class="form-control mt-3" required>
+                        <input type="number" name="cost" placeholder="COST PRICE" class="form-control mt-3" required>
                         <input type="number" name="price" placeholder="ITEM PRICE" class="form-control mt-3" required>
                         <input type="number" name="stock_quantity" placeholder="STOCK QUANTITY"
                             class="form-control mt-3" required>
@@ -170,4 +189,13 @@
         <div class="modal-content"></div>
     </div>
 </div>
+
+
+<!-- Edit Item Modal -->
+<div class="modal fade" id="returnItemModal" tabindex="-1" aria-label="returnItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content"></div>
+    </div>
+</div>
+
 {% endblock %}

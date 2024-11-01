@@ -17,23 +17,24 @@
         <div class="receipt-head" style="text-align: center;">
             <h3>Nazz Pharmacy</h3>
             <p>No. 123 FTH Jibia Bypass, Katsina</p>
-            <p style="text-align: justify;">Date: {{ date|date:"F j, Y" }}</p>
+            <p style="text-align: center;">Date: {{ date|date:"F j, Y" }}</p>
+            <p style="text-align: center;">Receipt ID: {{ receipt_id }}</p> <!-- Display Receipt UUID -->
         </div>
     </header>
-
 
     <form style="text-align: center;">
         <label for="buyer_name">Buyer's Name:</label>
         <input type="text" id="buyer_name" name="buyer_name" placeholder=""
             style="border: none; border-bottom:1px solid grey; margin-bottom: 3px;">
         <div class="box">
-            <label for="buyer_name">Buyer's Address:</label>
-            <input type="text" id="buyer_name" name="buyer_name" placeholder=""
+            <label for="buyer_address">Buyer's Address:</label>
+            <input type="text" id="buyer_address" name="buyer_address" placeholder=""
                 style="border: none; border-bottom:1px solid grey;">
         </div>
     </form>
-    {% if cart_items %}
-    <div class=" col-md-8 offset-md-2 mt-5">
+
+    {% if sales_items %}
+    <div class="col-md-8 offset-md-2 mt-5">
         <table class="table table-hover table-bordered mt-5">
             <thead class="table-primary">
                 <tr>
@@ -45,25 +46,25 @@
                 </tr>
             </thead>
             <tbody>
-                {% for cart_item in cart_items %}
+                {% for sales_item in sales_items %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ cart_item.item.name|title }}</td>
-                    <td>{{ cart_item.quantity }}</td>
-                    <td>{{ cart_item.item.price }}</td>
-                    <td>{{ cart_item.subtotal }}</td>
-
+                    <td>{{ sales_item.item.name|title }}</td>
+                    <td>{{ sales_item.quantity }}</td>
+                    <td>₦{{ sales_item.price }}</td>
+                    <td>₦{{ sales_item.price|floatformat:2 }}</td> <!-- Display subtotal -->
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <h6 style="text-align:end;">Total Price: ₦{{ total_price }}</h6>
-        <h4 style="text-align:end;">Total Price after Discount: ₦{{ total_discounted_price }}</h4>
+        <h6 style="text-align:end;">Total Price: ₦{{ total_price|floatformat:2 }}</h6>
+        {% if total_discounted_price %}
+        <h4 style="text-align:end;">Total Payable: ₦{{ total_discounted_price|floatformat:2 }}</h4>
+        {% endif %}
 
-        <a href="{% url 'view_cart' %}"><button class="btn btn-outline-success btn-sm ml-2"
-                onclick="window.print()">Print
-                Receipt</button></a>
-        <!-- <a href="{% url 'view_cart' %}" class="btn btn-secondary btn-sm">BackToCartList</a> -->
+        <a href="{% url 'view_cart' %}">
+            <button class="btn btn-outline-success btn-sm ml-2" onclick="window.print()">Print Receipt</button>
+        </a>
     </div>
     {% endif %}
     {% endblock %}

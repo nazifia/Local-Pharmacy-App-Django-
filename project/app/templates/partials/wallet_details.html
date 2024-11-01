@@ -24,7 +24,7 @@
                     Funds</a>
 
                 <a type="button" class="btn btn-sm btn-outline-danger" href="{% url 'reset_wallet' customer.id %}"
-                    onclick="return confirm('Are you sure you want to reset {{wallet.customer.name}}\'s wallet?')">Reset
+                    onclick="return confirm('Are you sure you want to reset {{wallet.customer.name}}\'s wallet?')">Clear
                     Wallet</a>
                 <a class="btn btn-sm btn-outline-dark" href="{{request.META.HTTP_REFERER}}">Back</a>
             </div>

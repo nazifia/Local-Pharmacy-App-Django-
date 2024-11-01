@@ -14,19 +14,19 @@
 <body>
     {% block content %}
     <style>
-        .col-md-8 {
-            margin-left: 10em;
+        .col-md-10 {
+            margin-left: 12em;
             margin-top: 30px;
         }
     </style>
 
-    <div class="col-md-8 offset-md-0">
+    <div class="col-md-10 offset-md-2">
         <a href="{% url 'manage_customers' %}" class="btn btn-sm btn-outline-dark mb-3">Back</a>
         {% for message in messages %}
         <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
         <h2 style="text-align: center;">CUSTOMERS LIST</h2>
-        <table class="table table-hover">
+        <table class="table table-hover" style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.3)">
             <thead class="table-primary">
                 <tr>
                     <th scope="col">SN</th>
@@ -44,16 +44,20 @@
                     <td>
                         <a href="{% url 'wallet_details' customer.id %}" hx-get="{% url 'wallet_details' customer.id %}"
                             hx-target="#wallet-info" hx-trigger="click" class="btn btn-success btn-sm">Wallet</a>
-                    </td>
-                    <td>{{ customer.name }}</td>
-                    <td>{{ customer.phone }}</td>
-                    <td>{{ customer.address }}</td>
-                    <td>
-                        <a type="button" class="btn btn-sm btn-primary" hx-get="{% url 'select_items' customer.id %}"
-                            hx-target="#item-selection" hx-swap="innerHTML">Select item</a>
 
                         <a href="{% url 'delete_customer' customer.id %}" class="btn btn-sm btn-danger"
                             onclick="return confirm('Are you sure you want to delete {{customer.name}} from the List?')">x</a>
+                    </td>
+                    <td>{{ customer.name|upper }}</td>
+                    <td>{{ customer.phone }}</td>
+                    <td>{{ customer.address|upper }}</td>
+                    <td>
+                        <a type="button" class="btn btn-sm btn-primary" hx-get="{% url 'select_items' customer.id %}"
+                            hx-target="#display" hx-swap="innerHTML">Select item</a>
+
+                        <a href="{% url 'customer_transaction_history' customer.id %}"
+                            hx-get="{% url 'customer_transaction_history' customer.id %}" hx-target="#wallet-info"
+                            hx-trigger="click" class="btn btn-warning btn-sm">History</a>
 
                         <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editCustomerModal"
                             hx-get="{% url 'edit_customer' customer.id %}"

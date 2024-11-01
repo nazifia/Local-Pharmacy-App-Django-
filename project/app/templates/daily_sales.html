@@ -73,7 +73,7 @@
         <a href="{{request.META.HTTP_REFERER}}" class="btn btn-outline-dark btn-sm">Back</a>
         <div class="col-md-10 offset-md-1">
             {% if daily_sales %}
-            <h1 class="col-md-8 offset-md-3">Daily Sales</h1>
+            <h1 style="text-align: center;">Daily Sales</h1>
             <table class="table table-hover" style="box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
                 <thead class="table-primary">
                     <tr>
@@ -90,7 +90,33 @@
                     {% endfor %}
                 </tbody>
             </table>
+
+            <h1 style="text-align: center;">Daily Profit</h1>
+            <table class="table table-hover" style="box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+                <thead class="table-primary">
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Total Sales</th>
+                        <th scope="col">Total Cost</th>
+                        <th scope="col">Total Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in daily_sales %}
+                    <tr>
+                        <td>{{ sale.day }}</td>
+                        <td>{{ sale.total_sales }}</td>
+                        <td>{{ sale.total_cost }}</td>
+                        <td>{{ sale.total_profit }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
         </div>
+
+
+
         <div class="col-md-10 offset-md-1 chart-container">
             <canvas id="dailySalesChart"></canvas>
         </div>

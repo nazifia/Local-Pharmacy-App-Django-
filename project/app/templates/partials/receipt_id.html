@@ -1,0 +1,23 @@
+<style>
+    #main {
+        margin-left: 13em;
+        margin-top: 5em;
+    }
+</style>
+
+<div id="main">
+    <h2>Retrieve Receipt</h2>
+
+    <form method="post" action="{% url 'retrieve_receipt' %}">
+        {% csrf_token %}
+        <label for="receipt_id">Enter Receipt ID:</label>
+        <input type="text" id="receipt_id" name="receipt_id" style="width: 350px; border-radius: 3px;" required>
+        <button type="submit" class="btn btn-sm btn-success">Retrieve</button>
+    </form>
+
+    {% if error_message %}
+    <p style="color: red;">{{ error_message }}</p>
+    {% endif %}
+
+    <a href="{{request.META.HTTP_REFERER}}" class="btn btn-sm btn-dark">Back</a>
+</div>

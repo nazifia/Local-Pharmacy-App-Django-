@@ -50,6 +50,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'app.middleware.AutoLogoutMiddleware',
+    'app.middleware.ActivityMiddleware',
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -126,3 +128,5 @@ STATIC_ROOT = os.path.join(BASE_DIR / 'static')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTO_LOGOUT_DELAY = 5

@@ -1,9 +1,6 @@
 from django.urls import path
 from . import views
 
-
-
-
 urlpatterns = [
     path('', views.index, name='index'),
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -15,7 +12,7 @@ urlpatterns = [
     path('delete_item/<int:pk>/', views.delete_item, name='delete_item'),
     path('dispense/', views.dispense, name='dispense'),
     path('cart/', views.cart, name='cart'),
-    # path('add_new_user/', views.add_new_user, name='add_new_user'),
+    path('return_item/<int:pk>/', views.return_item, name='return_item'),
     path('add_to_cart/<int:pk>/', views.add_to_cart, name='add_to_cart'),
     path('view_cart/', views.view_cart, name='view_cart'),
     path('clear_cart/', views.clear_cart, name='clear_cart'),
@@ -36,7 +33,13 @@ urlpatterns = [
     path('reset_wallet/<int:pk>/', views.reset_wallet, name='reset_wallet'),
     path('search_customer_items/<int:customer_id>/', views.search_customer_items, name='search_customer_items'),
     path('select_items/<int:pk>/', views.select_items, name='select_items'),
+    path('customer_receipt/<int:customer_id>/', views.customer_receipt, name='customer_receipt'),
     path('customers_on_negative/', views.customers_on_negative, name='customers_on_negative'),
     path('logout_user/', views.logout_user, name='logout_user'),
     path('change_user_password/', views.change_user_password, name='change_user_password'),
+    path('customer/<int:customer_id>/transaction-history/', views.customer_sales_history, name='customer_transaction_history'),
+    path('receipt_id/', views.receipt_id, name='receipt_id'),
+    path('retrieve-receipt/', views.retrieve_receipt, name='retrieve_receipt'),
+    path('reprint-receipt/<uuid:receipt_id>/', views.reprint_receipt, name='reprint_receipt'),
+    path('activity_logs/', views.activity_logs, name='activities'),
 ]

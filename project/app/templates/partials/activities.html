@@ -1,0 +1,40 @@
+{% block content %}
+
+<div class="col-md-8 offset-md-2">
+
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>NAZZ| Logs</title>
+    </head>
+
+    <body>
+        <h1 style="text-align: center;">Activity Logs</h1>
+        <a href="{{request.META.HTTP_REFERER}}" class="btn btn-sm mb-3 btn-outline-secondary">Back</a>
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-primary">
+                <tr>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.user }}</td>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.timestamp }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </body>
+
+    </html>
+</div>
+{% endblock %}
