@@ -44,7 +44,7 @@ class Item(models.Model):
         ('PCK', 'Packets'),
         ('ROLL', 'Rolls'),
         ('CTN', 'Cartons'),
-        ('AMP', 'Ample'),
+        ('AMP', 'Ampules'),
         ('VAIL', 'Vail'),
         # Add other units as needed
     ]
@@ -103,7 +103,7 @@ class Wholesale(models.Model):
         ('PCK', 'Packets'),
         ('ROLL', 'Rolls'),
         ('CTN', 'Cartons'),
-        ('AMP', 'Ample'),
+        ('AMP', 'Ampules'),
         ('VAIL', 'Vail'),
         # Add other units as needed
     ]
