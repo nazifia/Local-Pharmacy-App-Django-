@@ -13,19 +13,24 @@
 
 <body>
     {% block content %}
+    <style>
+        .container {
+            width: 50em;
+            margin-left: 8em;
+        }
+    </style>
 
-    <div class="col-md-9 offset-md-2">
+    <div class="container">
         <h3 style="color: red;">Select for: {{ customer.name }}</h3>
-        <h4>Wallet Balance: ₦ {{ customer.wallet.balance }}</h4>
-
+        <h4>Wallet Balance: ₦ {{ wallet_balance }}</h4>
         <!-- Search field to filter items -->
         <div class="mb-3">
             <input type="text" class="form-control" id="item-search" name="query" placeholder="Search for items..."
                 hx-get="{% url 'search_customer_items' customer.id %}" hx-trigger="keyup changed delay:500ms"
-                hx-target="#for-customer" hx-swap="outerHTML">
+                hx-target="#for-customer" hx-swap="outerHTML" style="background-color: rgb(210, 247, 253);">
         </div>
-        <a class="btn btn-sm btn-secondary" href="{{ request.META.HTTP_REFERER}}">Back</a>
-        <form method="post" action="{% url 'select_items' customer.id %}">
+        <a class="btn btn-sm btn-secondary" href="{{ request.META.HTTP_REFERER }}">Back</a>
+        <form method="post" action="{% url 'select_items' pk=customer.id %}">
             {% csrf_token %}
             <div id="item-selection">
                 <table class="table table-hover">
@@ -33,6 +38,7 @@
                         <tr>
                             <th>Select</th>
                             <th>Item</th>
+                            <th>Unit</th>
                             <th>Price</th>
                             <th>Stock Available</th>
                             <th>Quantity</th>
@@ -45,6 +51,7 @@
                                 <input type="checkbox" name="item_ids" value="{{ item.id }}">
                             </td>
                             <td>{{ item.name }}</td>
+                            <td>{{ item.unit }}</td>
                             <td>{{ item.price }}</td>
                             <td>{{ item.stock_quantity }}</td>
                             <td>
@@ -56,20 +63,20 @@
                     </tbody>
                 </table>
             </div>
-            <button href="{% url 'customer_receipt' customer.id %}" type="submit" class="btn btn-success">Proceed with
-                Purchase</button>
+            <button type="submit" class="btn btn-success">Proceed with Purchase</button>
         </form>
-
-        <script>
-            // Enable quantity input only when the item is selected
-            document.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
-                checkbox.addEventListener('change', function () {
-                    const quantityInput = this.closest('tr').querySelector('input[type="number"]');
-                    quantityInput.disabled = !this.checked;
-                });
-            });
-        </script>
     </div>
+
+    <script>
+        // Enable quantity input only when the item is selected
+        document.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                const quantityInput = this.closest('tr').querySelector('input[type="number"]');
+                quantityInput.disabled = !this.checked;
+            });
+        });
+    </script>
+
     {% endblock %}
 </body>
 

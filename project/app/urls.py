@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+
 urlpatterns = [
     path('', views.index, name='index'),
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -33,7 +34,7 @@ urlpatterns = [
     path('reset_wallet/<int:pk>/', views.reset_wallet, name='reset_wallet'),
     path('search_customer_items/<int:customer_id>/', views.search_customer_items, name='search_customer_items'),
     path('select_items/<int:pk>/', views.select_items, name='select_items'),
-    path('customer_receipt/<int:customer_id>/', views.customer_receipt, name='customer_receipt'),
+    # path('customer_receipt/<int:customer_id>/', views.customer_receipt, name='customer_receipt'),
     path('customers_on_negative/', views.customers_on_negative, name='customers_on_negative'),
     path('logout_user/', views.logout_user, name='logout_user'),
     path('change_user_password/', views.change_user_password, name='change_user_password'),
@@ -42,4 +43,6 @@ urlpatterns = [
     path('retrieve-receipt/', views.retrieve_receipt, name='retrieve_receipt'),
     path('reprint-receipt/<uuid:receipt_id>/', views.reprint_receipt, name='reprint_receipt'),
     path('activity_logs/', views.activity_logs, name='activities'),
+    path('receipts/', views.receipt_list, name='receipt_list'),
+    path('receipts/<uuid:receipt_id>/', views.receipt_detail, name='receipt_detail'),
 ]

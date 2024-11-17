@@ -89,12 +89,13 @@
 
         <a class="btn btn-sm btn-warning" href="{% url 'view_cart' %}">View cart</a>
 
+        <a class="btn btn-success btn-sm" href="{% url 'receipt' %}">Receipt</a>
+
         <form method="POST" action="{% url 'clear_cart' %}" onsubmit="return confirmClearCart();">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-dark btn-sm">Clear Cart</button>
         </form>
 
-        <a class="btn btn-outline-success btn-sm" href="{% url 'receipt' %}">Receipt</a>
         <a class="btn btn-secondary btn-sm" href="{{ request.META.HTTP_REFERER }}">Back</a>
     </div>
     <div class="col-md-8 offset-md-3 cart-table">
@@ -108,6 +109,7 @@
                 <tr>
                     <th scope="col">S/no</th>
                     <th scope="col">Description</th>
+                    <th scope="col">Unit</th>
                     <th scope="col">Qty</th>
                     <th scope="col">Rate</th>
                     <th scope="col">Subtotal</th>
@@ -120,6 +122,7 @@
                 <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ cart_item.item.name }}</td>
+                    <td>{{ cart_item.item.unit }}</td>
                     <td>{{ cart_item.quantity }}</td>
                     <td>{{ cart_item.item.price }}</td>
                     <td>{{ cart_item.subtotal }}</td>

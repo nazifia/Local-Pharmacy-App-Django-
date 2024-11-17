@@ -11,15 +11,18 @@
                     <a class="nav-link active" aria-current="page" href="{% url 'dashboard' %}">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{% url 'store' %}">Store</a>
+                    <a class="nav-link active" aria-current="page" href="{% url 'store' %}">Retail Store</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="{% url 'cart' %}">Dispense</a>
+                    <a class="nav-link active" href="{% url 'cart' %}">Dispense Retail</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'wholesale_page' %}">Wholesale</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
-                        Dropdown
+                        Management
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="{% url 'reports' %}">Reports</a></li>
@@ -27,7 +30,7 @@
                         <li>
                             <hr class="dropdown-divider">
                         </li>
-                        <li><a class="dropdown-item" href="{% url 'admin:index' %}">Add New User</a></li>
+                        <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin Page</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">

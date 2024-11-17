@@ -1,0 +1,112 @@
+{% block content %}
+
+<style>
+    /* receipts.css */
+
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
+    }
+
+    .receipt-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+        color: #333;
+        text-align: center;
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    table th,
+    table td {
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        text-align: left;
+        font-size: 13px;
+    }
+
+    table thead th {
+        background-color: #f2f2f2;
+        color: #555;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 10px;
+    }
+
+    table tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    table tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+
+    .wholesale-row {
+        background-color: #e8f6e8;
+        /* Light green to highlight wholesale */
+    }
+
+    a {
+        color: #3498db;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+        color: #2c3e50;
+    }
+</style>
+
+<div class="col-md-10 offset-md-2">
+    <h2>Wholesale Receipts List</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Receipt ID</th>
+                <th>Customer</th>
+                <th>Total Amount</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for receipt in receipts %}
+            <tr>
+                <td>{{ receipt.receipt_id }}</td>
+                <td>
+                    {% if receipt.customer %}
+                    {{ receipt.customer.name|upper }}
+                    {% elif receipt.buyer_name %}
+                    {{ receipt.buyer_name|upper }}
+                    {% else %}
+                    Anonymous
+                    {% endif %}
+                </td>
+                <td>{{ receipt.total_amount }}</td>
+                <td>{{ receipt.date }}</td>
+                <td>
+                    <a href="{% url 'wholesale_receipt_detail' receipt.receipt_id %}">View Details</a>
+                </td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

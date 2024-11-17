@@ -49,8 +49,12 @@
 </style>
 
 <div
-    style="background-image: url({% static 'images/Pharmacists.jpg' %}); height: 100vh; background-size: cover; background-position: center;">
+    style="background-image: url({% static 'images/pharmacy2.jpg' %}); height: 100vh; background-size: cover; background-position: center;">
     <h2 class="col-md-6 offset-md-4">WELCOME TO NAZZ PHARMACY</h2>
+    {% if not request.user.is_authenticated %}
+    <h2 style="color: rgb(113, 3, 3);" class="col-md-6 offset-md-4">Please log in to access the system.</h2>
+    <h3 style="color: rgb(113, 3, 3);" class="col-md-6 offset-md-4">Click on Login at top right angle.</h3>
+    {% endif %}
     <br>
     {% if user.is_superuser %}
     <div class="statistics">

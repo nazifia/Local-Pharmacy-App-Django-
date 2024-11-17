@@ -68,7 +68,7 @@
     }
 </style>
 
-<div class="col-md-8 offset-md-3" id="main">
+<div class="col-md-10 offset-md-2" id="main">
     <h3 class="col-md-8 offset-md-3">Dispensing Logs</h3>
 
     <!-- Add the date picker with HTMX -->
@@ -83,6 +83,7 @@
             <tr>
                 <th scope="col">User</th>
                 <th scope="col">Item Name</th>
+                <th scope="col">Unit</th>
                 <th scope="col">Quantity</th>
                 <th scope="col">Rate</th>
                 <th scope="col">Timestamp</th>
@@ -93,6 +94,7 @@
             <tr>
                 <td>{{ log.user|title }}</td>
                 <td>{{ log.name|title }}</td>
+                <td>{{ log.unit }}</td>
                 <td>{{ log.quantity }}</td>
                 <td>{{ log.amount }}</td>
                 <td>{{ log.created_at }}</td>

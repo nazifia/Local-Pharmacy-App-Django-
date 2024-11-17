@@ -17,21 +17,25 @@
         <div class="receipt-head" style="text-align: center;">
             <h3>Nazz Pharmacy</h3>
             <p>No. 123 FTH Jibia Bypass, Katsina</p>
-            <p style="text-align: center;">Date: {{ date|date:"F j, Y" }}</p>
-            <p style="text-align: center;">Receipt ID: {{ receipt_id }}</p> <!-- Display Receipt UUID -->
+            <p style="text-align: center;">Date: {{ receipt.date|date:"F j, Y" }}</p>
+            <p style="text-align: center;">Receipt ID: {{ receipt.receipt_id }}</p>
+            <p style="text-align: center;">Sales Person: {{ user.username }}</p>
         </div>
     </header>
 
-    <form style="text-align: center;">
+    <form id="buyer-info-form" method="POST" action="{% url 'receipt_detail' receipt.receipt_id %}"
+        style="text-align: center;">
+        {% csrf_token %}
         <label for="buyer_name">Buyer's Name:</label>
-        <input type="text" id="buyer_name" name="buyer_name" placeholder=""
+        <input type="text" id="buyer_name" name="buyer_name" value="{{ receipt.buyer_name|upper }}" placeholder=""
             style="border: none; border-bottom:1px solid grey; margin-bottom: 3px;">
         <div class="box">
             <label for="buyer_address">Buyer's Address:</label>
-            <input type="text" id="buyer_address" name="buyer_address" placeholder=""
-                style="border: none; border-bottom:1px solid grey;">
+            <input type="text" id="buyer_address" name="buyer_address" value="{{ receipt.buyer_address|upper }}"
+                placeholder placeholder="" style="border: none; border-bottom:1px solid grey;">
         </div>
     </form>
+
 
     {% if sales_items %}
     <div class="col-md-8 offset-md-2 mt-5">
@@ -40,6 +44,7 @@
                 <tr>
                     <th scope="col">SN</th>
                     <th scope="col">Item Name</th>
+                    <th scope="col">Unit</th>
                     <th scope="col">Quantity</th>
                     <th scope="col">Rate</th>
                     <th scope="col">Subtotal</th>
@@ -50,9 +55,10 @@
                 <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ sales_item.item.name|title }}</td>
-                    <td>{{ sales_item.quantity }}</td>
+                    <td>{{ sales_item.item.unit }}</td>
+                    <td>{{ sales_item.quantity }} </td>
                     <td>₦{{ sales_item.price }}</td>
-                    <td>₦{{ sales_item.price|floatformat:2 }}</td> <!-- Display subtotal -->
+                    <td>₦{{ sales_item.price|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -62,9 +68,8 @@
         <h4 style="text-align:end;">Total Payable: ₦{{ total_discounted_price|floatformat:2 }}</h4>
         {% endif %}
 
-        <a href="{% url 'view_cart' %}">
-            <button class="btn btn-outline-success btn-sm ml-2" onclick="window.print()">Print Receipt</button>
-        </a>
+        <button class="btn btn-outline-success btn-sm ml-2" onclick="submitFormAndPrint()">Print Receipt</button>
+        <a href="{% url 'view_cart' %}" class="btn btn-sm btn-outline-secondary">Back</a>
     </div>
     {% endif %}
     {% endblock %}
@@ -72,6 +77,20 @@
     <footer>
         <p style="text-align: center;">___Thank you for patronage___</p>
     </footer>
+
+    <script>
+        function submitFormAndPrint() {
+            // Submit the form programmatically
+            document.getElementById('buyer-info-form').submit();
+
+            // Trigger print after a short delay to ensure form submission
+            setTimeout(function () {
+                window.print();
+                // Redirect to the view cart page after printing
+                window.location.href = "{% url 'view_cart' %}";
+            }, 500);
+        }
+    </script>
 </body>
 
 </html>

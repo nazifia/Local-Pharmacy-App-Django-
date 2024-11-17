@@ -55,9 +55,9 @@
                         <a type="button" class="btn btn-sm btn-primary" hx-get="{% url 'select_items' customer.id %}"
                             hx-target="#display" hx-swap="innerHTML">Select item</a>
 
-                        <a href="{% url 'customer_transaction_history' customer.id %}"
-                            hx-get="{% url 'customer_transaction_history' customer.id %}" hx-target="#wallet-info"
-                            hx-trigger="click" class="btn btn-warning btn-sm">History</a>
+                        <!-- <a href="{% url 'customer_transaction_history' customer.id %}"
+                            hx-get="" hx-target="#wallet-info"
+                            hx-trigger="click" class="btn btn-warning btn-sm">History</a> -->
 
                         <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editCustomerModal"
                             hx-get="{% url 'edit_customer' customer.id %}"

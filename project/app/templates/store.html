@@ -1,201 +1,270 @@
 {% extends 'base.html' %}
-{% block content %}
-<style>
-    .container {
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        margin-top: 1em;
-    }
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
 
-    .col-md-8 {
-        width: 60em;
-        margin-left: 2em;
-    }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wholesale Store</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'htmx/htmx.min.js' %}"></script>
+</head>
 
-    .col-md-8 button,
-    .col-md-8 a {
-        box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-    }
+<body>
+    {% block content %}
 
-    .side-nav {
-        width: 100px;
-        position: sticky;
-        top: 50px;
-        /* Make the side nav sticky and set the top offset */
-        height: calc(100vh - 50px);
-        margin-left: 2em;
-    }
-
-    .side-nav button,
-    .side-nav a {
-        margin: 10px;
-        width: 100px;
-        box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Media query for tablet screens */
-    @media (max-width: 768px) {
+    <style>
         .container {
-            grid-template-columns: 1fr;
-            /* Make the layout single-column */
+            display: grid;
+            grid-template-columns: 1fr 4fr;
+            margin-top: 1em;
         }
 
         .col-md-8 {
-            width: 100%;
-            margin-left: 0;
+            width: 55em;
+            margin-left: -20px;
+        }
+
+        .col-md-8 button,
+        .col-md-8 a {
+            box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .side-nav {
-            width: 100%;
-            margin-left: 0;
-            margin-bottom: 1em;
+            width: 100px;
+            position: sticky;
+            top: 50px;
+            height: calc(100vh - 50px);
+            margin-left: 2em;
         }
 
         .side-nav button,
         .side-nav a {
-            width: 100%;
-        }
-    }
-
-    /* Media query for mobile screens */
-    @media (max-width: 480px) {
-        .container {
-            grid-template-columns: 1fr;
-            margin-top: 0.5em;
+            margin: 10px;
+            width: 100px;
+            box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.2);
         }
 
-        .col-md-8 {
-            width: 100%;
-            margin-left: 0;
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .col-md-8 {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .side-nav {
+                width: 100%;
+                margin-left: 0;
+                margin-bottom: 1em;
+            }
+
+            .side-nav button,
+            .side-nav a {
+                width: 100%;
+            }
         }
 
-        .side-nav {
-            position: relative;
-            width: 100%;
-            height: auto;
+        @media (max-width: 480px) {
+            .container {
+                grid-template-columns: 1fr;
+                margin-top: 0.5em;
+            }
+
+            .col-md-8 {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .side-nav {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .side-nav button,
+            .side-nav a {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            table {
+                font-size: 0.8em;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.5em;
+            }
         }
+    </style>
 
-        .side-nav button,
-        .side-nav a {
-            width: 100%;
-            margin: 5px 0;
-        }
+    <div class="container">
+        <div class="side-nav">
+            <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal" type="button">Add
+                item</a>
+            <a class="btn btn-secondary btn-sm" href="{{request.META.HTTP_REFERER}}">Back</a>
+            {% if request.user.is_superuser %}
+            <p>Total Purchase Value: <strong>₦{{ total_purchase_value }}</strong></p>
+            <p>Total Stock Value: <strong>₦{{ total_stock_value }}</strong></p>
+            <p>Total Profit: <strong>₦{{ total_profit }}</strong></p>
+            {% endif %}
+        </div>
 
-        table {
-            font-size: 0.8em;
-            /* Reduce table font size for smaller screens */
-        }
+        <div class="col-md-8 offset-4">
+            <input type="text" class="form-control mb-3" hx-get="{% url 'search_item' %}"
+                hx-trigger="keyup changed delay:300ms" hx-target="#item-list" placeholder="Search items..."
+                name="search" style="background-color: rgb(232, 253, 211);">
 
-        .table th,
-        .table td {
-            padding: 0.5em;
-        }
-    }
-</style>
+            {% for message in messages %}
+            <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
 
-<div class="container">
-    <div class="side-nav">
-        <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal" type="button">Add
-            item</a>
+            <table class="table table-hover">
+                <thead class="table-primary">
+                    <tr>
+                        <th scope="col">ACTION</th>
+                        <th scope="col">DESCRIPTION</th>
+                        <th scope="col">UNIT</th>
+                        {% if user.is_superuser %}
+                        <th scope="col">COST</th>
+                        {% endif %}
+                        <th scope="col">U/PRICE</th>
+                        <th scope="col">STOCK</th>
+                        <th scope="col">EXP DATE</th>
+                    </tr>
+                </thead>
+                <tbody id="item-list">
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editModal"
+                                hx-get="{% url 'edit_item' item.id %}" hx-target="#editModal .modal-content">Edit</a>
 
-        <a class="btn btn-secondary btn-sm" href="{{ request.META.HTTP_REFERER }}">Back</a>
-        {% if request.user.is_superuser %}
-        <p>Total Purchase Value: <strong>₦{{ total_purchase_value }}</strong></p>
-        <p>Total Stock Value: <strong>₦{{ total_stock_value }}</strong></p>
-        <p>Total Profit: <strong>₦{{ total_profit }}</strong></p>
-        {% endif %}
+                            <a class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#returnItemModal"
+                                hx-get="{% url 'return_item' item.id %}"
+                                hx-target="#returnItemModal .modal-content">Return</a>
 
-    </div>
+                            <a href="{% url 'delete_item' item.id %}"
+                                onclick="return confirm('Are you sure you want to delete {{item.name|title}} from  Store?')"
+                                class="btn btn-sm btn-danger">x</a>
+                        </td>
+                        <td>{{item.name}}</td>
+                        <td>{{item.unit}}</td>
+                        {% if user.is_superuser %}
+                        <td>{{item.cost}}</td>
+                        {% endif %}
+                        <td>{{item.price}}</td>
+                        <td>{{item.stock_quantity}}</td>
+                        <td>{{item.exp_date}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    <div class="col-md-8 offset-4">
-        <input type="text" class="form-control mb-3" hx-get="{% url 'search_item' %}"
-            hx-trigger="keyup changed delay:300ms" hx-target="#item-list" placeholder="Search items..." name="search"
-            style="background-color: rgb(232, 253, 211);">
+        <!-- Add Item to Store Modal -->
+        <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>ADD NEW ITEM</h3>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="{% url 'add_item' %}" method="post">
+                            {% csrf_token %}
+                            <input type="text" name="name" placeholder="ITEM NAME" class="form-control mt-3" required>
+                            <!-- Unit Selection Dropdown -->
+                            <select name="unit" class="form-control mt-3" required>
+                                <option value="Unit">Select Unit</option>
+                                <option value="PCS">Pieces</option>
+                                <option value="TAB">Tablets</option>
+                                <option value="CAP">Capsules</option>
+                                <option value="TIN">Tins</option>
+                                <option value="BTL">Bottles</option>
+                                <option value="PCK">Packets</option>
+                                <option value="ROLL">Rolls</option>
+                                <option value="CTN">Cartons</option>
+                                <option value="VAIL">Vail</option>
+                                <option value="AMP">Ample</option>
+                            </select>
 
-        {% for message in messages %}
-        <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
+                            <input type="number" name="cost" id="cost" placeholder="COST PRICE"
+                                class="form-control mt-3" oninput="calculatePrice()" required>
 
-        <table class="table table-hover">
-            <thead class="table-primary">
-                <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">NAME</th>
-                    {% if user.is_superuser %}
-                    <th scope="col">COST</th>
-                    {% endif %}
-                    <th scope="col">S/PRICE</th>
-                    <th scope="col">STOCK</th>
-                    <th scope="col">EXP DATE</th>
-                </tr>
-            </thead>
-            <tbody id="item-list">
-                {% for item in items %}
-                <tr>
-                    <td>
-                        <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editItemModal"
-                            hx-get="{% url 'edit_item' item.id %}" hx-target="#editItemModal .modal-content">Edit</a>
+                            <!-- Markup Percentage Dropdown -->
+                            <select name="markup_percentage" id="markup_percentage" class="form-control mt-3"
+                                onchange="calculatePrice()">
+                                <option value="0">Select Markup</option>
+                                <option value="5">5% markup</option>
+                                <option value="10">10% markup</option>
+                                <option value="15">15% markup</option>
+                                <option value="20">20% markup</option>
+                                <option value="25">25% markup</option>
+                                <option value="30">30% markup</option>
+                                <option value="35">35% markup</option>
+                                <option value="40">40% markup</option>
+                                <option value="45">45% markup</option>
+                                <option value="50">50% markup</option>
+                                <option value="55">55% markup</option>
+                                <option value="60">60% markup</option>
+                                <option value="65">65% markup</option>
+                                <option value="70">70% markup</option>
+                                <option value="75">75% markup</option>
+                                <option value="80">80% markup</option>
+                                <option value="85">85% markup</option>
+                                <option value="90">90% markup</option>
+                                <option value="95">95% markup</option>
+                                <option value="100">100% markup</option>
+                            </select>
 
-                        <a class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#returnItemModal"
-                            hx-get="{% url 'return_item' item.id %}"
-                            hx-target="#returnItemModal .modal-content">Return</a>
-
-                        <a href="{% url 'delete_item' item.id %}"
-                            onclick="return confirm('Are you sure you want to delete {{item.name|title}} from Store?')"
-                            class="btn btn-sm btn-danger">x</a>
-                    </td>
-                    <td>{{item.name}}</td>
-                    {% if user.is_superuser %}
-                    <td>{{item.cost}}</td>
-                    {% endif %}
-                    <td>{{item.price}}</td>
-                    <td>{{item.stock_quantity}}</td>
-                    <td>{{item.exp_date}}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Add Item to Store Modal -->
-    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>ADD NEW ITEM</h3>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form action="{% url 'add_item' %}" method="post">
-                        {% csrf_token %}
-                        <input type="text" name="name" placeholder="ITEM NAME" class="form-control mt-3" required>
-                        <input type="number" name="cost" placeholder="COST PRICE" class="form-control mt-3" required>
-                        <input type="number" name="price" placeholder="ITEM PRICE" class="form-control mt-3" required>
-                        <input type="number" name="stock_quantity" placeholder="STOCK QUANTITY"
-                            class="form-control mt-3" required>
-                        <input type="date" name="exp_date" value="{{ item.exp_date|date:'Y-m-d'}}"
-                            class="form-control mt-3" required>
-                        <input type="submit" class="btn btn-success btn-sm mt-3" value="Save">
-                    </form>
+                            <!-- Automatically calculated price -->
+                            <input type="number" name="price" id="price" placeholder="ITEM PRICE"
+                                class="form-control mt-3" readonly>
+                            <input type="number" name="stock_quantity" placeholder="STOCK QUANTITY"
+                                class="form-control mt-3" required>
+                            <input type="date" name="exp_date" class="form-control mt-3" required>
+                            <input type="submit" class="btn btn-success btn-sm mt-3" value="Save">
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Edit Item Modal -->
-<div class="modal fade" id="editItemModal" tabindex="-1" aria-label="editItemModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content"></div>
+    <!-- Edit Item Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-label="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content"></div>
+        </div>
     </div>
-</div>
 
-
-<!-- Edit Item Modal -->
-<div class="modal fade" id="returnItemModal" tabindex="-1" aria-label="returnItemModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content"></div>
+    <!-- Return Item Modal -->
+    <div class="modal fade" id="returnItemModal" tabindex="-1" aria-label="returnItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content"></div>
+        </div>
     </div>
-</div>
 
-{% endblock %}
+    <script>
+        function calculatePrice() {
+            const cost = parseFloat(document.getElementById("cost").value) || 0;
+            const markupPercentage = parseFloat(document.getElementById("markup_percentage").value) || 0;
+
+            // Calculate price based on the cost and markup percentage
+            const price = cost + (cost * markupPercentage / 100);
+
+            // Show the calculated price in the price input field
+            document.getElementById("price").value = price.toFixed(2);
+        }
+    </script>
+
+    {% endblock %}
+</body>
+
+</html>

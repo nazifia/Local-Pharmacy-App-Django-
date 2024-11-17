@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wholesale Customer List</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'htmx/htmx.min.js' %}"></script>
+</head>
+
+<body>
+    {% block content %}
+    <style>
+        .col-md-9 {
+            margin-left: 10em;
+            margin-top: 30px;
+        }
+    </style>
+
+    <div class="col-md-9 offset-md-2">
+        <a href="{% url 'wholesale_page' %}" class="btn btn-sm btn-outline-dark mb-3">Back</a>
+        {% for message in messages %}
+        <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        <h2 style="text-align: center;">WHOLESALE CUSTOMERS LIST</h2>
+        <table class="table table-hover mt-3" style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.3)">
+            <thead class="table-primary">
+                <tr>
+                    <th scope="col">SN</th>
+                    <th scope="col">WALLET</th>
+                    <th scope="col">CUSTOMERS</th>
+                    <th scope="col">PHONE</th>
+                    <th scope="col">ADDRESS</th>
+                    <th scope="col">ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ forloop.counter }}.</td>
+                    <td>
+                        <a href="{% url 'wholesale_customer_wallet_details' customer.id %}"
+                            hx-get="{% url 'wholesale_customer_wallet_details' customer.id %}" hx-target="#wallet-info"
+                            hx-trigger="click" class="btn btn-success btn-sm">Wallet</a>
+
+                        <a href="{% url 'delete_wholesale_customer' customer.id %}" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Are you sure you want to delete {{customer.name}} from the List?')">x</a>
+                    </td>
+                    <td>{{ customer.name|upper }}</td>
+                    <td>{{ customer.phone }}</td>
+                    <td>{{ customer.address|upper }}</td>
+                    <td>
+                        <a type="button" class="btn btn-sm btn-primary"
+                            hx-get="{% url 'select_wholesale_items' customer.id %}" hx-target="#item-selection"
+                            hx-swap="innerHTML">Select item</a>
+
+                        <!-- <a href=""
+                            hx-get="{% url 'wholesale_transactions' customer.id %}" hx-target="#wallet-info"
+                            hx-trigger="click" class="btn btn-warning btn-sm">History</a> -->
+
+                        <a class="btn btn-sm btn-info" data-bs-toggle="modal"
+                            data-bs-target="#editWholesaleCustomerModal"
+                            hx-get="{% url 'edit_wholesale_customer' customer.id %}"
+                            hx-target="#editWholesaleCustomerModal .modal-content">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div id="wallet-info"></div> <!-- Display wallet details here -->
+        <div id="item-selection"></div> <!-- Display item selection form here -->
+    </div>
+
+    <!-- Edit Wholesale Customer Modal -->
+    <div class="modal fade" id="editWholesaleCustomerModal" tabindex="-1" aria-label="editWholesaleCustomerModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+</body>
+
+</html>

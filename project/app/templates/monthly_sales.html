@@ -4,7 +4,7 @@
 <html>
 
 <head>
-    <title>Search Sales</title>
+    <title>Monthly Sales</title>
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'htmx/htmx.min.js' %}"></script>
@@ -65,29 +65,29 @@
 
 <body>
     <div class="container">
-        <a href="{{request.META.HTTP_REFERER}}" class="btn btn-outline-dark btn-sm">Back</a>
+        <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-outline-dark btn-sm mb-3">Back</a>
 
         <div class="col-md-8 offset-md-2">
             {% if monthly_sales %}
-            <h1 style="text-align: center;">Monthly Sales</h1>
+            <h1 class="text-center">Monthly Sales</h1>
             <table class="table table-hover" style="box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
                 <thead class="table-primary">
                     <tr>
-                        <th scope="col">MONTH</th>
-                        <th scope="col">AMOUNT</th>
+                        <th scope="col">Month</th>
+                        <th scope="col">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for sale in monthly_sales %}
+                    {% for month, sale in monthly_sales %}
                     <tr>
-                        <td>{{ sale.month }}</td>
+                        <td>{{ month }}</td>
                         <td>{{ sale.total_sales }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
-            <h1 style="text-align: center;">Monthly Profit</h1>
+            <h1 class="text-center">Monthly Profit</h1>
             <table class="table table-hover" style="box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
                 <thead class="table-primary">
                     <tr>
@@ -98,9 +98,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for sale in monthly_sales %}
+                    {% for month, sale in monthly_sales %}
                     <tr>
-                        <td>{{ sale.month }}</td>
+                        <td>{{ month }}</td>
                         <td>{{ sale.total_sales }}</td>
                         <td>{{ sale.total_cost }}</td>
                         <td>{{ sale.total_profit }}</td>
@@ -109,9 +109,8 @@
                 </tbody>
             </table>
 
-
-            <div class="col-md-10 offset-md-3 chart-container">
-                <canvas id="monthlySalesChart"></canvas>
+            <div class="chart-container">
+                <canvas class="col-md-6 offset-md-3" id="monthlySalesChart"></canvas>
             </div>
 
             <script>
@@ -119,10 +118,10 @@
                 var monthlySalesChart = new Chart(ctx, {
                     type: 'pie',
                     data: {
-                        labels: [{% for sale in monthly_sales %}'{{ sale.month }}',{% endfor %}],
+                        labels: [{% for month, sale in monthly_sales %}'{{ month }}', {% endfor %}],
                 datasets: [{
                     label: 'Total Sales',
-                    data: [{% for sale in monthly_sales %}{{ sale.total_sales }}, {% endfor %}],
+                    data: [{% for month, sale in monthly_sales %}{{ sale.total_sales }}, {% endfor %}],
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.6)',
                         'rgba(54, 162, 235, 0.6)',
@@ -158,9 +157,9 @@
             </script>
 
             {% else %}
-            <h4>NO SALES FOR THE MONTH</h4>
-
-            <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary form-control" style="width: 100%;">Go
+            <h4>No Sales for the Month</h4>
+            <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary form-control mt-3"
+                style="width: 100%;">Go
                 Back</a>
             {% endif %}
         </div>

@@ -15,7 +15,7 @@
         <div class="receipt-head" style="text-align: center;">
             <h3>Nazz Pharmacy</h3>
             <p>No. 123 FTH Jibia Bypass, Katsina</p>
-            <p style="text-align: justify;">Date: {{ date|date:"F j, Y" }}</p>
+            <p style="text-align: center;">Date: {{ date|date:"F j, Y" }}</p>
         </div>
     </header>
 
@@ -23,7 +23,8 @@
 
         <h4>Customer: {{ customer.name }}</h4>
         <h5>Wallet Balance: ₦ {{ customer.wallet.balance }}</h5>
-        <p><strong>Receipt ID:</strong> {{ receipt.receipt_short_id }}</p>
+        <p><strong>Receipt ID:</strong> {{ receipt.receipt_id }}</p>
+        <p><strong>Sales Person:</strong> {{ user.username }}</p>
 
 
         <table class="table  table-bordered mt-3">

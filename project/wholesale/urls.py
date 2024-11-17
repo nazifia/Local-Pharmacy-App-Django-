@@ -1,0 +1,32 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('wholesale_page/', views.wholesale_page, name='wholesale_page'),
+    path('wholesales/', views.wholesales, name='wholesales'),
+    path('add_to_wholesale/', views.add_to_wholesale, name='add_to_wholesale'),
+    path('edit_wholesale_item/<int:pk>/', views.edit_wholesale_item, name='edit_wholesale_item'),
+    path('return_wholesale_item/<int:pk>/', views.return_wholesale_item, name='return_wholesale_item'),
+    path('delete_wholesale_item/<int:pk>/', views.delete_wholesale_item, name='delete_wholesale_item'),
+    path('search_wholesale_item/', views.search_wholesale_item, name='search_wholesale_item'),
+    path('add_to_wholesale_cart/<int:item_id>/', views.add_to_wholesale_cart, name='add_to_wholesale_cart'),
+    path('dispense_wholesale/', views.dispense_wholesale, name='dispense_wholesale'),
+    path('wholesale_cart/', views.wholesale_cart, name='wholesale_cart'),
+    path('clear_wholesale_cart/', views.clear_wholesale_cart, name='clear_wholesale_cart'),
+    path('update_wholesale_cart_quantity/<int:pk>/', views.update_wholesale_cart_quantity, name='update_wholesale_cart_quantity'),
+    path('wholesale_receipt/', views.wholesale_receipt, name='wholesale_receipt'),
+    path('wholesale_receipt_list/', views.wholesale_receipt_list, name='wholesale_receipt_list'),
+    # path('save_wholesale_receipt/', views.save_wholesale_receipt, name='save_wholesale_receipt'),
+    path('wholesale_receipt_detail/<uuid:receipt_id>/', views.wholesale_receipt_detail, name='wholesale_receipt_detail'),
+    path('wholesale_customers/', views.wholesale_customers, name='wholesale_customers'),
+    path('register_wholesale_customers/', views.register_wholesale_customers, name='register_wholesale_customers'),
+    path('edit_wholesale_customer/<int:pk>/', views.edit_wholesale_customer, name='edit_wholesale_customer'),
+    path('reset_wholesale_customer_wallet/<int:pk>/', views.reset_wholesale_customer_wallet, name='reset_wholesale_customer_wallet'),
+    path('delete_wholesale_customer/<int:pk>/', views.delete_wholesale_customer, name='delete_wholesale_customer'),
+    path('wholesale_customer_wallet_details/<int:pk>/', views.wholesale_customer_wallet_details, name='wholesale_customer_wallet_details'),
+    path('wholesale_customer_add_funds/<int:pk>/', views.wholesale_customer_add_funds, name='wholesale_customer_add_funds'),
+    path('wholesale_customer_add_funds/<int:pk>/', views.wholesale_customer_add_funds, name='wholesale_customer_add_funds'),
+    path('wholesale_transactions/<int:customer_id>/', views.wholesale_transactions, name='wholesale_transactions'),
+    path('select_wholesale_items/<int:pk>/', views.select_wholesale_items, name='select_wholesale_items'),
+    # path('wholesale_customer_receipt/<int:customer_id>/', views.wholesale_customer_receipt, name='wholesale_customer_receipt'),
+]

@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sales History for {{ customer.name }}</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'htmx/htmx.min.js' %}"></script>
+</head>
+
+<body>
+    <h1>Transaction History for {{ customer.name|upper }}</h1>
+    {% for sale in sales %}
+    <h6>Transaction on {{ sale.date }}</h6>
+    <h6>Total Amount: {{ sale.total_amount }}</h6>
+    <h6>Wallet Balance: {{ wallet_balance }}</h6>
+    <table class="table table-hover">
+        <thead class="table table-primary">
+            <tr>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in sale.sales_items.all %}
+            <tr>
+                <td>{{ item.item.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.price }}</td>
+                <td>{{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <th colspan="3" class="text-end">Total</th>
+                <th>₦{{ sale.total_amount }}</th>
+            </tr>
+        </tbody>
+
+    </table>
+    {% endfor %}
+</body>
+
+</html>

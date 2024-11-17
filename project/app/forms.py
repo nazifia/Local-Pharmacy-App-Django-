@@ -18,10 +18,11 @@ class addItemForm(forms.ModelForm):
     price = forms.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = forms.IntegerField()
     exp_date = forms.DateField()
-    
+    unit = forms.ChoiceField(choices=Item.UNIT_CHOICES)
+
     class Meta:
         model = Item
-        fields = ('name', 'cost', 'price', 'stock_quantity', 'exp_date')
+        fields = ('name', 'unit', 'markup_percentage', 'cost', 'price', 'stock_quantity', 'exp_date')
         
 
 class dispenseForm(forms.Form):
