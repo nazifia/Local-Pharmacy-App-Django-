@@ -96,7 +96,7 @@ def return_wholesale_item(request, pk):
             if form.is_valid():
                 return_quantity = form.cleaned_data.get('return_item_quantity')
                 if return_quantity <= 0:
-                    messages.error(request, 'Invalid return item quantity')
+                    messages.warning(request, 'Invalid return item quantity')
                     return redirect('wholesales')
 
                 try:
@@ -106,7 +106,7 @@ def return_wholesale_item(request, pk):
                         
                         sales_item = WholesaleSalesItem.objects.filter(item=item, quantity__gte=return_quantity).first()
                         if not sales_item:
-                            messages.error(request, f'No matching sales record found for {item.name}.')
+                            messages.warning(request, f'No matching sales record found for {item.name}.')
                             return redirect('wholesales')
 
                         if sales_item.quantity > return_quantity:
@@ -141,7 +141,7 @@ def return_wholesale_item(request, pk):
                         return redirect('wholesales')
                 
                 except Exception as e:
-                    messages.error(request, f'Error processing return: {e}')
+                    messages.warning(request, f'Error processing return: {e}')
                     return redirect('wholesales')
         else:
             form = ReturnWholesaleItemForm(instance=item)
@@ -415,7 +415,7 @@ def edit_wholesale_customer(request, pk):
             messages.success(request, f'{customer.name} edited successfully.')
             return redirect('wholesale_customers')
         else:
-            messages.error(request, f'{customer.name} failed to edit, please try again')
+            messages.warning(request, f'{customer.name} failed to edit, please try again')
     else:
         form = WholesaleCustomerForm(instance=customer)
     if request.headers.get('HX-Request'):
@@ -501,7 +501,7 @@ def select_wholesale_items(request, pk):
         units = request.POST.getlist('units')  # Capture units for each item selected
         
         if len(item_ids) != len(quantities):
-            messages.error(request, 'Item IDs and quantities mismatch')
+            messages.warning(request, 'Item IDs and quantities mismatch')
             return redirect('select_wholesale_items', pk=pk)
 
         total_cost = Decimal('0.0')
@@ -545,7 +545,7 @@ def select_wholesale_items(request, pk):
                 # )
 
             except Wholesale.DoesNotExist:
-                messages.error(request, 'One of the items does not exist')
+                messages.warning(request, 'One of the items does not exist')
                 return redirect('select_wholesale_items', pk=pk)
         
         # Deduct the total cost from the customer's wallet
@@ -554,7 +554,7 @@ def select_wholesale_items(request, pk):
             wallet.balance -= total_cost
             wallet.save()
         except WholesaleCustomerWallet.DoesNotExist:
-            messages.error(request, 'Customer does not have a wallet')
+            messages.warning(request, 'Customer does not have a wallet')
             return redirect('select_wholesale_items', pk=pk)
         
         messages.success(request, 'Items successfully added to the cart and amount deducted from wallet.')
@@ -677,7 +677,7 @@ def wholesale_receipt(request):
         }
         receipt = create_receipt(sales, receipt_data=receipt_data)
         if not receipt or not receipt.receipt_id:
-            messages.error(request, "Failed to generate receipt. Please try again.")
+            messages.warning(request, "Failed to generate receipt. Please try again.")
             return redirect('wholesale_receipt')  # Redirect to the wholesale receipt view
         cart_items.delete()  # Clear the cart only after successfully saving receipt
     else:
