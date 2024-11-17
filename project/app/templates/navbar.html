@@ -16,11 +16,9 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="{% url 'cart' %}">Dispense Retail</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="{% url 'wholesale_page' %}">Wholesale</a>
-                </li>
+
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
                         Management
                     </a>
@@ -32,6 +30,9 @@
                         </li>
                         <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin Page</a></li>
                     </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'wholesale_page' %}">Wholesale</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
