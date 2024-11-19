@@ -143,7 +143,6 @@ class WholesaleCartItem(models.Model):
 
 class DispensingLog(models.Model):
     UNIT_CHOICES = [
-        ('unit', 'Select Unit'),
         ('PCS', 'Pieces'),
         ('TAB', 'Tablets'),
         ('TIN', 'Tins'),
@@ -153,17 +152,17 @@ class DispensingLog(models.Model):
         ('CTN', 'Cartons'),
         ('AMP', 'Ample'),
         ('VAIL', 'Vail'),
-        # Add other units as needed
+        ('UNDEFINED', 'Undefined'),
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
-    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='unit')
-    quantity = models.IntegerField()
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='UNDEFINED')
+    quantity = models.PositiveIntegerField(default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
-        return f'{self.user.username} {self.name} {self.quantity} {self.created_at}'
+        return f'{self.user.username} - {self.name} ({self.quantity} {self.unit})'
 
 
 class Customer(models.Model):
@@ -309,6 +308,9 @@ class Receipt(models.Model):
     def __str__(self):
         name = self.customer.name if self.customer else (self.wholesale_customer.name if self.wholesale_customer else "Anonymous")
         return f"Receipt {self.receipt_id} - {name} - {self.total_amount} on {self.date}"
+    
+
+
 
         
         

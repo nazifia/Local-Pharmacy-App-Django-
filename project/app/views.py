@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
+from django.utils.timezone import now
 from datetime import timedelta
 from .models import *
 from .forms import *
@@ -270,44 +271,107 @@ def cart(request):
     total_price = sum(item.item.price * item.quantity for item in cart_items)
     return render(request, 'cart.html', {'cart_items': cart_items, 'total_price': total_price})
 
+
+
+from django.views.decorators.http import require_POST
 @login_required
+@require_POST
 def add_to_cart(request, pk):
-    item = get_object_or_404(Item, id=pk)
-    if request.method == 'POST':
-        quantity = int(request.POST.get('quantity', 0))
-        if item.stock_quantity >= quantity:
-            cart_item, created = CartItem.objects.get_or_create(item=item, defaults={'quantity': 0})
+    if request.user.is_authenticated:
+        item = get_object_or_404(Item, id=pk)
+        quantity = int(request.POST.get('quantity', 1))
+        unit = request.POST.get('unit')
+
+        if quantity <= 0:
+            messages.warning(request, "Quantity must be greater than zero.")
+            return redirect('cart')
+
+        if quantity > item.stock_quantity:
+            messages.warning(request, f"Not enough stock for {item.name}. Available stock: {item.stock_quantity}")
+            return redirect('cart')
+
+        # Add the item to the cart or update its quantity if it already exists
+        cart_item, created = CartItem.objects.get_or_create(
+            item=item,
+            unit=unit,
+            defaults={'quantity': quantity, 'discount_amount': Decimal('0.0')}
+        )
+        if not created:
             cart_item.quantity += quantity
-            item.stock_quantity -= quantity
-            item.save()
             cart_item.save()
-            messages.success(request, f'Added {quantity} {item.name}(s) to the cart.')
-        else:
-            messages.warning(request, f'Not enough stock for {item.name}.')
-    return redirect('cart')
+
+        # Update stock quantity in the wholesale inventory
+        item.stock_quantity -= quantity
+        item.save()
+
+        messages.success(request, f"{quantity} {item.unit} of {item.name} added to cart.")
+
+        # Return the cart summary as JSON if this was an HTMX request
+        if request.headers.get('HX-Request'):
+            cart_items = CartItem.objects.all()
+            total_price = sum(cart_item.item.price * cart_item.quantity for cart_item in cart_items)
+            total_discount = sum(cart_item.discount_amount for cart_item in cart_items)
+            total_discounted_price = total_price - total_discount
+
+            # Return JSON data for HTMX update
+            return JsonResponse({
+                'cart_items_count': cart_items.count(),
+                'total_price': float(total_price),
+                'total_discount': float(total_discount),
+                'total_discounted_price': float(total_discounted_price),
+            })
+
+        # Redirect to the wholesale cart page if not an HTMX request
+        return redirect('cart')
+    else:
+        return redirect('index')
+
+
+
 
 @login_required
 def view_cart(request):
-    cart_items = CartItem.objects.all()
-    total_price, total_discount = 0, 0
-    if request.method == 'POST':
+    if request.user.is_authenticated:
+        cart_items = CartItem.objects.select_related('item').all()
+        total_price, total_discount = 0, 0
+
+        if request.method == 'POST':
+            # Process each discount form submission
+            for cart_item in cart_items:
+                # Fetch the discount amount using cart_item.id in the input name
+                discount = int(request.POST.get(f'discount_amount-{cart_item.id}', 0))
+                cart_item.discount_amount = max(discount, 0)
+                cart_item.save()
+
+        # Calculate totals
         for cart_item in cart_items:
-            discount = int(request.POST.get(f'discount_amount-{cart_item.id}', 0))
-            cart_item.discount_amount = max(discount, 0)
-            cart_item.save()
+            cart_item.subtotal = cart_item.item.price * cart_item.quantity
+            total_price += cart_item.subtotal
+            total_discount += cart_item.discount_amount
+            
+            # Log dispensing activity
+            # DispensingLog.objects.create(
+            #     user=request.user,
+            #     name=cart_item.item,
+            #     unit=cart_item.unit,
+            #     quantity=cart_item.quantity,
+            #     amount=cart_item.subtotal
+            # )
+        
+        final_total = total_price - total_discount
 
-    for cart_item in cart_items:
-        cart_item.subtotal = cart_item.item.price * cart_item.quantity
-        total_price += cart_item.subtotal
-        total_discount += cart_item.discount_amount
+        total_discounted_price = total_price - total_discount
+        return render(request, 'cart.html', {
+            'cart_items': cart_items,
+            'total_discount': total_discount,
+            'total_price': total_price,
+            'total_discounted_price': total_discounted_price,
+            'final_total': final_total,
+        })
+    else:
+        return redirect('index')
 
-    total_discounted_price = total_price - total_discount
-    return render(request, 'cart.html', {
-        'cart_items': cart_items,
-        'total_discount': total_discount,
-        'total_price': total_price,
-        'total_discounted_price': total_discounted_price,
-    })
+
 
 @login_required
 def update_cart_quantity(request, pk):
@@ -317,20 +381,50 @@ def update_cart_quantity(request, pk):
         if 0 < quantity_to_return <= cart_item.quantity:
             cart_item.item.stock_quantity += quantity_to_return
             cart_item.item.save()
+
+            # Adjust DispensingLog entries
+            DispensingLog.objects.filter(
+                user=request.user,
+                name=cart_item.item.name,
+                quantity=quantity_to_return,
+                amount=cart_item.item.price * quantity_to_return
+            ).delete()
+
+            # Update cart item quantity or remove it
             cart_item.quantity -= quantity_to_return
             cart_item.save() if cart_item.quantity > 0 else cart_item.delete()
             messages.success(request, f'Updated quantity of {cart_item.item.name}.')
-    return redirect('view_cart')
+
+    return redirect('cart')
+
+
 
 @login_required
 def clear_cart(request):
     if request.method == 'POST':
-        for cart_item in CartItem.objects.all():
+        cart_items = CartItem.objects.all()
+
+        for cart_item in cart_items:
+            # Return items to stock
             cart_item.item.stock_quantity += cart_item.quantity
             cart_item.item.save()
-            cart_item.delete()
+
+            # Remove DispensingLog entries
+            DispensingLog.objects.filter(
+                user=request.user,
+                name=cart_item.item.name,
+                quantity=cart_item.quantity,
+                amount=cart_item.item.price * cart_item.quantity
+            ).delete()
+
+        # Remove associated Sales entries if no other cart items exist
+        Sales.objects.filter(user=request.user).delete()
+
+        # Clear cart items
+        cart_items.delete()
         messages.success(request, 'Cart cleared and items returned to stock.')
-    return redirect('view_cart')
+
+    return redirect('cart')
 
 
 
@@ -341,6 +435,10 @@ def receipt(request):
 
     # Retrieve cart items
     cart_items = CartItem.objects.all()
+    if not cart_items.exists():
+        messages.warning(request, "No items in the cart.")
+        return redirect('cart')
+
     total_price, total_discount = 0, 0
 
     # Calculate totals
@@ -353,27 +451,32 @@ def receipt(request):
     final_total = total_discounted_price if total_discount > 0 else total_price
 
     # Check for an existing Sales instance with the same total amount and user
-    sales = Sales.objects.filter(user=request.user, total_amount=final_total).first()
+    sales, created = Sales.objects.get_or_create(
+        user=request.user,
+        total_amount=final_total
+    )
 
-    if not sales:
-        # Create a new Sales instance if one does not already exist
-        sales = Sales.objects.create(user=request.user, total_amount=final_total)
-
+    if created:
+        # Create SalesItem and DispensingLog for each cart item
         for cart_item in cart_items:
+            # Create SalesItem
             SalesItem.objects.create(
                 sales=sales,
                 item=cart_item.item,
                 quantity=cart_item.quantity,
                 price=cart_item.item.price
             )
+
+            # Create DispensingLog
             DispensingLog.objects.create(
                 user=request.user,
                 name=cart_item.item.name,
+                unit=cart_item.item.unit,
                 quantity=cart_item.quantity,
                 amount=cart_item.subtotal
             )
 
-    # Check if a receipt already exists for this Sales instance
+    # Ensure a unique Receipt is created for the Sales instance
     receipt, created = Receipt.objects.get_or_create(
         sales=sales,
         defaults={
@@ -381,7 +484,7 @@ def receipt(request):
             'total_amount': final_total,
             'buyer_name': buyer_name if not sales.customer else None,
             'buyer_address': buyer_address,
-            'date': timezone.now()
+            'date': now()
         }
     )
 
@@ -397,6 +500,11 @@ def receipt(request):
     # Delete the cart items after processing
     cart_items.delete()
 
+    # Update daily and monthly sales
+    daily_sales_data = get_daily_sales()
+    monthly_sales_data = get_monthly_sales()
+
+    # Pass sales data to the receipt context (if needed)
     sales_items = sales.sales_items.all()
 
     return render(request, 'receipt.html', {
@@ -405,6 +513,8 @@ def receipt(request):
         'total_price': total_price,
         'total_discount': total_discount,
         'total_discounted_price': total_discounted_price,
+        'daily_sales': daily_sales_data,  # For additional context
+        'monthly_sales': monthly_sales_data,  # For additional context
     })
 
 
@@ -786,14 +896,6 @@ def select_items(request, pk):
                 subtotal = (item.price * quantity) - discount
                 total_cost += subtotal
 
-                # Log dispensing activity
-                # DispensingLog.objects.create(
-                #     user=request.user,
-                #     name=item.name,
-                #     unit=cart_item.unit,
-                #     quantity=quantity,
-                #     amount=subtotal
-                # )
 
             except Item.DoesNotExist:
                 messages.warning(request, 'One of the items does not exist')
@@ -808,7 +910,7 @@ def select_items(request, pk):
             messages.warning(request, 'Customer does not have a wallet')
             return redirect('select_items', pk=pk)
         
-        messages.success(request, 'Items successfully added to the cart and amount deducted from wallet.')
+        messages.success(request, f'{quantity} {item.unit} of {item.name} successfully added to the cart.')
         return redirect('cart')
 
     return render(request, 'partials/select_items.html', {

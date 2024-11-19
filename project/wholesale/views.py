@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
@@ -11,7 +12,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_POST
 import uuid
-from uuid import UUID, uuid4
+from app.views import get_daily_sales, get_monthly_sales
 
 
 
@@ -183,6 +184,7 @@ def dispense_wholesale(request):
         return redirect('index')
 
 
+from django.views.decorators.http import require_POST
 @login_required
 @require_POST
 def add_to_wholesale_cart(request, item_id):
@@ -193,11 +195,11 @@ def add_to_wholesale_cart(request, item_id):
 
         if quantity <= 0:
             messages.warning(request, "Quantity must be greater than zero.")
-            return redirect('wholesale_cart')
+            return redirect('cart')
 
         if quantity > item.stock_quantity:
             messages.warning(request, f"Not enough stock for {item.name}. Available stock: {item.stock_quantity}")
-            return redirect('wholesale_cart')
+            return redirect('cart')
 
         # Add the item to the cart or update its quantity if it already exists
         cart_item, created = WholesaleCartItem.objects.get_or_create(
@@ -213,7 +215,7 @@ def add_to_wholesale_cart(request, item_id):
         item.stock_quantity -= quantity
         item.save()
 
-        messages.success(request, f"{quantity} {unit} of {item.name} added to wholesale cart.")
+        messages.success(request, f"{quantity} {item.unit} of {item.name} added to cart.")
 
         # Return the cart summary as JSON if this was an HTMX request
         if request.headers.get('HX-Request'):
@@ -239,6 +241,87 @@ def add_to_wholesale_cart(request, item_id):
 
 
 @login_required
+def select_wholesale_items(request, pk):
+    customer = get_object_or_404(WholesaleCustomer, id=pk)
+    items = Wholesale.objects.all().order_by('name')
+    
+    # Fetch wallet balance
+    wallet_balance = Decimal('0.0')
+    try:
+        wallet_balance = customer.wholesale_customer_wallet.balance
+    except WholesaleCustomerWallet.DoesNotExist:
+        messages.warning(request, 'This customer does not have an associated wallet.')
+
+    if request.method == 'POST':
+        item_ids = request.POST.getlist('item_ids')
+        quantities = request.POST.getlist('quantities')
+        discount_amounts = request.POST.getlist('discount_amounts', [])
+        units = request.POST.getlist('units')  # Capture units for each item selected
+        
+        if len(item_ids) != len(quantities):
+            messages.warning(request, 'Item IDs and quantities mismatch')
+            return redirect('select_wholesale_items', pk=pk)
+
+        total_cost = Decimal('0.0')
+
+        for i, (item_id, quantity_str) in enumerate(zip(item_ids, quantities)):
+            try:
+                item = Wholesale.objects.get(id=item_id)
+                quantity = int(quantity_str)
+                discount = Decimal(discount_amounts[i]) if i < len(discount_amounts) else Decimal('0.0')
+                
+                if quantity > item.stock_quantity:
+                    messages.warning(request, f'Not enough stock for {item.name}')
+                    return redirect('select_wholesale_items', pk=pk)
+
+                # Deduct the stock when adding the item to the cart
+                item.stock_quantity -= quantity
+                item.save()
+
+                # Check if item already in cart; if so, update it
+                cart_item, created = WholesaleCartItem.objects.get_or_create(
+                    item=item,
+                    defaults={'quantity': quantity, 'discount_amount': discount}
+                )
+                if not created:
+                    cart_item.quantity += quantity
+                    cart_item.discount_amount += discount
+                    cart_item.unit = units  # Update or set unit
+                cart_item.save()
+
+                # Calculate the subtotal dynamically and add it to total_cost
+                subtotal = (item.price * quantity) - discount
+                total_cost += subtotal
+
+
+            except Wholesale.DoesNotExist:
+                messages.warning(request, 'One of the items does not exist')
+                return redirect('select_wholesale_items', pk=pk)
+        
+        # Deduct the total cost from the customer's wallet
+        try:
+            wallet = customer.wholesale_customer_wallet
+            wallet.balance -= total_cost
+            wallet.save()
+        except WholesaleCustomerWallet.DoesNotExist:
+            messages.warning(request, 'Customer does not have a wallet')
+            return redirect('select_wholesale_items', pk=pk)
+        
+        messages.success(request, f'{quantity} {item.unit} of {item.name} successfully added to the cart.')
+        return redirect('wholesale_cart')
+
+    return render(request, 'wholesale/select_wholesale_items.html', {
+        'customer': customer,
+        'items': items,
+        'wallet_balance': wallet_balance
+    })
+
+
+
+
+
+
+@login_required
 def wholesale_cart(request):
     if request.user.is_authenticated:
         cart_items = WholesaleCartItem.objects.select_related('item').all()
@@ -257,15 +340,6 @@ def wholesale_cart(request):
             cart_item.subtotal = cart_item.item.price * cart_item.quantity
             total_price += cart_item.subtotal
             total_discount += cart_item.discount_amount
-            
-            # Log dispensing activity
-            DispensingLog.objects.create(
-                user=request.user,
-                name=cart_item.item,
-                unit=cart_item.unit,
-                quantity=cart_item.quantity,
-                amount=cart_item.subtotal
-            )
         
         final_total = total_price - total_discount
 
@@ -290,24 +364,168 @@ def update_wholesale_cart_quantity(request, pk):
         if 0 < quantity_to_return <= cart_item.quantity:
             cart_item.item.stock_quantity += quantity_to_return
             cart_item.item.save()
+
+            # Adjust DispensingLog entries
+            DispensingLog.objects.filter(
+                user=request.user,
+                name=cart_item.item.name,
+                quantity=quantity_to_return,
+                amount=cart_item.item.price * quantity_to_return
+            ).delete()
+
+            # Update cart item quantity or remove it
             cart_item.quantity -= quantity_to_return
             cart_item.save() if cart_item.quantity > 0 else cart_item.delete()
             messages.success(request, f'Updated quantity of {cart_item.item.name}.')
-            
+
     return redirect('wholesale_cart')
+
+
 
 
 
 @login_required
 def clear_wholesale_cart(request):
     if request.method == 'POST':
-        for cart_item in WholesaleCartItem.objects.all():
-            cart_item.item.stock_quantity += cart_item.quantity
-            cart_item.item.save()
-            cart_item.delete()
-        messages.success(request, 'Cart cleared and items returned to stock.')
+        try:
+            with transaction.atomic():
+                cart_items = WholesaleCartItem.objects.all()
+
+                for cart_item in cart_items:
+                    # Return items to stock
+                    cart_item.item.stock_quantity += cart_item.quantity
+                    cart_item.item.save()
+
+                    # Remove DispensingLog entries
+                    DispensingLog.objects.filter(
+                        user=request.user,
+                        name=cart_item.item.name,
+                        quantity=cart_item.quantity,
+                        amount=cart_item.item.price * cart_item.quantity
+                    ).delete()
+
+                    # Reverse sales entry
+                    sales_entry = Sales.objects.filter(
+                        user=request.user,
+                        total_amount=cart_item.item.price * cart_item.quantity
+                    ).first()  # Replace with the correct field for items
+
+                    if sales_entry:
+                        if sales_entry.customer:
+                            wallet = sales_entry.customer.wallet
+                            wallet.balance += cart_item.item.price * cart_item.quantity
+                            wallet.save()
+
+                        if sales_entry.wholesale_customer:
+                            wholesale_wallet = sales_entry.wholesale_customer.wholesale_customer_wallet
+                            wholesale_wallet.balance += cart_item.item.price * cart_item.quantity
+                            wholesale_wallet.save()
+
+                        # Delete sales entry
+                        sales_entry.delete()
+
+                # Clear cart items
+                cart_items.delete()
+                messages.success(request, 'Cart cleared, items returned to stock, and wallet transactions reversed.')
+
+        except Exception as e:
+            messages.error(request, f"An error occurred: {e}")
+            print(f"Error during clear_wholesale_cart: {e}")
+
     return redirect('wholesale_cart')
 
+
+
+
+
+@login_required
+def wholesale_receipt(request):
+    buyer_name = request.POST.get('buyer_name', '')
+    buyer_address = request.POST.get('buyer_address', '')
+
+    # Retrieve cart items
+    cart_items = WholesaleCartItem.objects.all()
+    if not cart_items.exists():
+        messages.warning(request, "No items in the cart.")
+        return redirect('wholesale_cart')
+
+    total_price, total_discount = Decimal(0), Decimal(0)
+
+    # Calculate totals
+    for cart_item in cart_items:
+        cart_item.subtotal = cart_item.item.price * cart_item.quantity
+        total_price += cart_item.subtotal
+        total_discount += cart_item.discount_amount
+
+    total_discounted_price = total_price - total_discount
+    final_total = total_discounted_price if total_discount > 0 else total_price
+
+    # Always create a new Sales instance
+    sales = Sales.objects.create(
+        user=request.user,
+        total_amount=final_total
+    )
+
+    # Create SalesItem and DispensingLog for each cart item
+    for cart_item in cart_items:
+        # Create SalesItem
+        WholesaleSalesItem.objects.create(
+            sales=sales,
+            item=cart_item.item,
+            quantity=cart_item.quantity,
+            price=cart_item.item.price
+        )
+
+        # Create DispensingLog
+        DispensingLog.objects.create(
+            user=request.user,
+            name=cart_item.item.name,
+            unit=cart_item.item.unit,
+            quantity=cart_item.quantity,
+            amount=cart_item.subtotal
+        )
+
+    # Always create a new Receipt instance
+    receipt, created = Receipt.objects.get_or_create(
+        sales=sales,
+        defaults={
+            'receipt_id':uuid.uuid4(),
+            'total_amount':final_total,
+            'buyer_name':buyer_name if not sales.customer else None,
+            'buyer_address':buyer_address,
+            'date':now()            
+        }
+    )
+    
+    if created:
+        # Convert Decimal values to float before saving to the session
+        request.session['receipt_data'] = {
+            'total_price': float(total_price),
+            'total_discount': float(total_discount),
+            'buyer_address': buyer_address,
+        }
+        request.session['receipt_id'] = str(receipt.receipt_id)
+    
+
+    # Delete the cart items after processing
+    cart_items.delete()
+
+    # Update daily and monthly sales
+    daily_sales_data = get_daily_sales()
+    monthly_sales_data = get_monthly_sales()
+
+    # Pass sales data to the receipt context (if needed)
+    sales_items = sales.wholesale_sales_items.all()
+
+    return render(request, 'wholesale/wholesale_receipt.html', {
+        'receipt': receipt,
+        'sales_items': sales_items,
+        'total_price': total_price,
+        'total_discount': total_discount,
+        'total_discounted_price': total_discounted_price,
+        'daily_sales': daily_sales_data,  # For additional context
+        'monthly_sales': monthly_sales_data,  # For additional context
+    })
 
 
 
@@ -471,6 +689,8 @@ def wholesale_customer_wallet_details(request, pk):
     })
 
 
+
+
 @login_required
 @user_passes_test(is_admin)
 def reset_wholesale_customer_wallet(request, pk):
@@ -482,89 +702,6 @@ def reset_wholesale_customer_wallet(request, pk):
 
 
 
-@login_required
-def select_wholesale_items(request, pk):
-    customer = get_object_or_404(WholesaleCustomer, id=pk)
-    items = Wholesale.objects.all().order_by('name')
-    
-    # Fetch wallet balance
-    wallet_balance = Decimal('0.0')
-    try:
-        wallet_balance = customer.wholesale_customer_wallet.balance
-    except WholesaleCustomerWallet.DoesNotExist:
-        messages.warning(request, 'This customer does not have an associated wallet.')
-
-    if request.method == 'POST':
-        item_ids = request.POST.getlist('item_ids')
-        quantities = request.POST.getlist('quantities')
-        discount_amounts = request.POST.getlist('discount_amounts', [])
-        units = request.POST.getlist('units')  # Capture units for each item selected
-        
-        if len(item_ids) != len(quantities):
-            messages.warning(request, 'Item IDs and quantities mismatch')
-            return redirect('select_wholesale_items', pk=pk)
-
-        total_cost = Decimal('0.0')
-
-        for i, (item_id, quantity_str) in enumerate(zip(item_ids, quantities)):
-            try:
-                item = Wholesale.objects.get(id=item_id)
-                quantity = int(quantity_str)
-                discount = Decimal(discount_amounts[i]) if i < len(discount_amounts) else Decimal('0.0')
-                
-                if quantity > item.stock_quantity:
-                    messages.warning(request, f'Not enough stock for {item.name}')
-                    return redirect('select_wholesale_items', pk=pk)
-
-                # Deduct the stock when adding the item to the cart
-                item.stock_quantity -= quantity
-                item.save()
-
-                # Check if item already in cart; if so, update it
-                cart_item, created = WholesaleCartItem.objects.get_or_create(
-                    item=item,
-                    defaults={'quantity': quantity, 'discount_amount': discount}
-                )
-                if not created:
-                    cart_item.quantity += quantity
-                    cart_item.discount_amount += discount
-                    cart_item.unit = units  # Update or set unit
-                cart_item.save()
-
-                # Calculate the subtotal dynamically and add it to total_cost
-                subtotal = (item.price * quantity) - discount
-                total_cost += subtotal
-
-                # Log dispensing activity
-                # DispensingLog.objects.create(
-                #     user=request.user,
-                #     name=item.name,
-                #     unit=cart_item.unit,
-                #     quantity=quantity,
-                #     amount=subtotal
-                # )
-
-            except Wholesale.DoesNotExist:
-                messages.warning(request, 'One of the items does not exist')
-                return redirect('select_wholesale_items', pk=pk)
-        
-        # Deduct the total cost from the customer's wallet
-        try:
-            wallet = customer.wholesale_customer_wallet
-            wallet.balance -= total_cost
-            wallet.save()
-        except WholesaleCustomerWallet.DoesNotExist:
-            messages.warning(request, 'Customer does not have a wallet')
-            return redirect('select_wholesale_items', pk=pk)
-        
-        messages.success(request, 'Items successfully added to the cart and amount deducted from wallet.')
-        return redirect('wholesale_cart')
-
-    return render(request, 'wholesale/select_wholesale_items.html', {
-        'customer': customer,
-        'items': items,
-        'wallet_balance': wallet_balance
-    })
 
 
 
@@ -590,136 +727,3 @@ def wholesale_transactions(request, customer_id):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-def create_receipt(sales, customer=None, receipt_data=None):
-    """
-    Helper function to create a receipt if it doesn't already exist.
-    """
-    receipt_id = receipt_data.get('receipt_id', uuid4()) if receipt_data else uuid4()
-    
-    # Attempt to parse receipt_id as UUID; if invalid, generate a new UUID
-    try:
-        receipt_id = UUID(receipt_id)
-    except ValueError:
-        receipt_id = uuid4()
-    
-    receipt, created = Receipt.objects.get_or_create(
-        receipt_id=receipt_id,
-        defaults={
-            'sales': sales,
-            'wholesale_customer': customer,
-            'buyer_name': receipt_data.get('buyer_name', customer.name if customer else ''),
-            'buyer_address': receipt_data.get('buyer_address', ''),
-            'total_amount': Decimal(receipt_data.get('total_price', '0.0')),
-            'date': now(),
-        }
-    )
-    return receipt
-
-
-@login_required
-def wholesale_receipt(request):
-    buyer_name = request.POST.get('buyer_name', '')
-    buyer_address = request.POST.get('buyer_address', '')
-    cart_items = WholesaleCartItem.objects.all()
-
-    total_price, total_discount = 0, 0
-    for cart_item in cart_items:
-        cart_item.subtotal = cart_item.item.price * cart_item.quantity
-        total_price += cart_item.subtotal
-        total_discount += cart_item.discount_amount
-
-    total_discounted_price = total_price - total_discount
-    final_total = total_discounted_price if total_discount > 0 else total_price
-
-    sales, created = Sales.objects.get_or_create(
-        user=request.user,
-        total_amount=final_total,
-        date=now().date()
-    )
-
-    # Add items to sales and dispensing logs, but do not save the receipt yet
-    if created or not WholesaleSalesItem.objects.filter(sales=sales).exists():
-        for cart_item in cart_items:
-            WholesaleSalesItem.objects.create(
-                sales=sales,
-                item=cart_item.item,
-                unit=cart_item.unit,
-                quantity=cart_item.quantity,
-                price=cart_item.item.price
-            )
-            DispensingLog.objects.create(
-                user=request.user,
-                name=cart_item.item.name,
-                unit=cart_item.unit,
-                quantity=cart_item.quantity,
-                amount=cart_item.subtotal
-            )
-
-    if request.method == "POST" and request.POST.get("action") == "save_receipt":
-        receipt_data = {
-            'receipt_id': str(uuid4()),
-            'buyer_name': buyer_name,
-            'buyer_address': buyer_address,
-            'total_price': final_total,
-        }
-        receipt = create_receipt(sales, receipt_data=receipt_data)
-        if not receipt or not receipt.receipt_id:
-            messages.warning(request, "Failed to generate receipt. Please try again.")
-            return redirect('wholesale_receipt')  # Redirect to the wholesale receipt view
-        cart_items.delete()  # Clear the cart only after successfully saving receipt
-    else:
-        receipt = None
-
-    sales_items = sales.wholesale_sales_items.all()
-    return render(request, 'wholesale/wholesale_receipt.html', {
-        'receipt': receipt,
-        'sales_items': sales_items,
-        'total_price': total_price,
-        'total_discount': total_discount,
-        'final_total': final_total,
-        'total_discounted_price': total_discounted_price,
-        'user': request.user,
-    })
-    
-
-
-
-# @login_required
-# def wholesale_customer_receipt(request, customer_id):
-#     customer = get_object_or_404(WholesaleCustomer, id=customer_id)
-#     receipt_data = request.session.pop('receipt_data', None)
-
-#     if not receipt_data:
-#         return redirect('select_wholesale_items', pk=customer_id)
-
-#     total_amount = Decimal(receipt_data['total_price'])
-#     sales, created = Sales.objects.get_or_create(
-#         user=request.user,
-#         total_amount=total_amount,
-#         date=now().date()
-#     )
-
-#     receipt = create_receipt(sales, customer=customer, receipt_data=receipt_data)
-#     sales_items = sales.wholesale_sales_items.all() if sales else []
-
-#     return render(request, 'wholesale/wholesale_customer_receipt.html', {
-#         'customer': customer,
-#         'receipt_data': receipt_data,
-#         'date': now(),
-#         'receipt': receipt,
-#         'user': request.user,
-#         'sales_items': sales_items,
-#     })
