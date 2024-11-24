@@ -24,7 +24,7 @@ class WholesaleCartItemAdmin(admin.ModelAdmin):
     list_filter = ('item', 'unit')
 
 class DispensingLogAdmin(admin.ModelAdmin):
-    list_display = ('user', 'name', 'unit', 'quantity', 'amount', 'created_at')
+    list_display = ('user', 'name', 'unit', 'quantity', 'amount', 'status', 'created_at')
     list_filter = ('user', 'created_at')
     search_fields = ('name',)
 

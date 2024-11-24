@@ -11,7 +11,7 @@
     <li class="list-group-item">
         <form method="POST" action="{% url 'add_to_wholesale_cart' item.id %}">
             {% csrf_token %}
-            <div>{{ item.name }}</div>
+            <div>{{ item.name }} - {{ item.stock_quantity }} {{item.unit}} Available, at {{ item.price }} each.</div>
 
             <!-- Unit Selection Dropdown -->
             <div class="mb-2">
@@ -34,7 +34,7 @@
                     required>
             </div>
 
-            <div>{{ item.stock_quantity }} Available, at {{ item.price }} each.</div>
+            <div></div>
             <button class="btn btn-primary btn-sm float-end" type="submit">Add to Cart</button>
         </form>
 

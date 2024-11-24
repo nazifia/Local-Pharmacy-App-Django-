@@ -70,7 +70,58 @@
         text-decoration: underline;
         color: #2c3e50;
     }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        h2 {
+            font-size: 20px;
+        }
+
+        table th,
+        table td {
+            font-size: 11px;
+            padding: 8px;
+        }
+
+        table {
+            margin-bottom: 10px;
+        }
+
+        .col-md-10 {
+            padding: 10px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        h2 {
+            font-size: 15px;
+        }
+
+        table thead th {
+            background-color: #f2f2f2;
+            color: #555;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10px;
+
+        }
+
+        table th,
+        table td {
+            font-size: 9px;
+            padding: 4px;
+        }
+
+        table {
+            margin-bottom: 7px;
+        }
+
+        .col-md-10 {
+            padding: 7px;
+        }
+    }
 </style>
+
 
 <div class="col-md-10 offset-md-2">
     <h2>Retail Receipts List</h2>

@@ -30,15 +30,17 @@
         .bar-chart,
         .pie-chart {
             height: 60vh;
+            width: 60vw;
         }
     }
 
     /* Media query for mobile screens */
-    @media (max-width: 480px) {
+    @media (max-width: 400px) {
 
         .bar-chart,
         .pie-chart {
             height: 40vh;
+            width: 40vh;
             padding: 5px;
         }
 
@@ -62,7 +64,7 @@
             <canvas id="dailySalesChart"></canvas>
         </div>
         <div class="pie-chart">
-            <canvas id="monthlySalesChart"></canvas>
+            <canvas class="col-md-6 offset-md-2" id="monthlySalesChart"></canvas>
         </div>
     </div>
     {% endif %}

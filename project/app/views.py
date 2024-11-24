@@ -161,6 +161,11 @@ def edit_item(request, pk):
 
 
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+from django.db import transaction
+from django.contrib import messages
+
 @login_required
 def return_item(request, pk):
     item = get_object_or_404(Item, id=pk)
@@ -169,44 +174,48 @@ def return_item(request, pk):
         form = ReturnItemForm(request.POST)
         if form.is_valid():
             return_quantity = form.cleaned_data.get('return_item_quantity')
-            
-            # Ensure quantity is valid
+
+            # Validate the return quantity
             if return_quantity <= 0:
-                messages.warning(request, 'Invalid return item quantity')
+                messages.warning(request, 'Invalid return item quantity.')
                 return redirect('store')
 
             try:
                 with transaction.atomic():
-                    # Update item stock quantity
+                    # Update item stock
                     item.stock_quantity += return_quantity
                     item.save()
-                    
-                    # Find the associated sales item record
+
+                    # Find the sales item associated with the returned item
                     sales_item = SalesItem.objects.filter(item=item, quantity__gte=return_quantity).first()
                     if not sales_item:
                         messages.warning(request, f'No matching sales record found for {item.name}.')
                         return redirect('store')
 
-                    # Adjust or delete the sales item
+                    # Update sales item quantity or delete it
                     if sales_item.quantity > return_quantity:
                         sales_item.quantity -= return_quantity
                         sales_item.save()
                     else:
-                        # Remove sales item if all quantity is returned
                         sales_item.delete()
 
-                    # Adjust sales total amount
+                    # Update the sales record's total amount
                     sales = sales_item.sales
                     sales.calculate_total_amount()
 
-                    # Reverse wallet deduction if applicable
-                    if sales.customer and sales.customer.wallet:
+                    # Process wallet refund if applicable
+                    if sales.customer and hasattr(sales.customer, 'wallet'):
                         wallet = sales.customer.wallet
                         refund_amount = return_quantity * sales_item.price
+
+                        if refund_amount <= 0:
+                            messages.warning(request, 'Invalid refund amount calculated.')
+                            return redirect('store')
+
                         wallet.balance += refund_amount
                         wallet.save()
 
-                        # Log transaction history for the refund
+                        # Log the refund transaction
                         TransactionHistory.objects.create(
                             customer=sales.customer,
                             transaction_type='refund',
@@ -214,28 +223,52 @@ def return_item(request, pk):
                             description=f'Refund for {return_quantity} of {item.name}'
                         )
 
-                    # Remove associated dispensing log if applicable
-                    dispensing_log = DispensingLog.objects.filter(
-                        user=sales.user, name=item.name, quantity=return_quantity
-                    ).first()
-                    if dispensing_log:
-                        dispensing_log.delete()
+                        messages.success(
+                            request,
+                            f'{return_quantity} of {item.name} successfully returned, and ₦{refund_amount} refunded to the wallet.'
+                        )
+                    else:
+                        messages.warning(request, 'Customer wallet not found or not associated.')
 
-                    messages.success(request, f'{return_quantity} of {item.name} successfully returned.')
+                    # Reflect return on dispensing log
+                    dispensing_log = DispensingLog.objects.filter(user=sales.user, name=item.name).first()
+                    if dispensing_log:
+                        if dispensing_log.quantity == return_quantity:
+                            # Full return of the dispensed quantity
+                            dispensing_log.quantity = 0
+                            dispensing_log.status = 'Returned'
+                        elif dispensing_log.quantity > return_quantity:
+                            # Partial return
+                            dispensing_log.quantity -= return_quantity
+                            dispensing_log.status = 'Partially Returned'
+                        else:
+                            messages.warning(request, f'Returned quantity exceeds dispensed quantity for {item.name}.')
+                            return redirect('store')
+
+                        dispensing_log.save()
+
+
+                    # Successful return operation
+                    messages.success(request, f'{return_quantity} of {item.name} successfully returned and reflected on the dispensing log.')
                     return redirect('store')
-            
+
             except Exception as e:
-                messages.warning(request, f'Error processing return: {e}')
+                # Handle exceptions during the atomic transaction
+                print(f'Error during item return: {e}')
+                messages.error(request, f'Error processing return: {e}')
                 return redirect('store')
         else:
-            messages.warning(request, 'Form is invalid, please check your input.')
-    else:
-        form = ReturnItemForm(instance=item)
+            messages.warning(request, 'Invalid input. Please correct the form and try again.')
 
+    else:
+        # Display the return form in a modal or a page
+        form = ReturnItemForm()
+
+    # Return appropriate response for HTMX or full-page requests
     if request.headers.get('HX-Request'):
         return render(request, 'return_item_modal.html', {'form': form, 'item': item})
     else:
-        return render(request, 'store.html')
+        return render(request, 'store.html', {'form': form})
 
 
 
@@ -348,15 +381,7 @@ def view_cart(request):
             cart_item.subtotal = cart_item.item.price * cart_item.quantity
             total_price += cart_item.subtotal
             total_discount += cart_item.discount_amount
-            
-            # Log dispensing activity
-            # DispensingLog.objects.create(
-            #     user=request.user,
-            #     name=cart_item.item,
-            #     unit=cart_item.unit,
-            #     quantity=cart_item.quantity,
-            #     amount=cart_item.subtotal
-            # )
+
         
         final_total = total_price - total_discount
 
@@ -396,6 +421,9 @@ def update_cart_quantity(request, pk):
             messages.success(request, f'Updated quantity of {cart_item.item.name}.')
 
     return redirect('cart')
+
+
+
 
 
 
@@ -443,68 +471,68 @@ def receipt(request):
 
     # Calculate totals
     for cart_item in cart_items:
-        cart_item.subtotal = cart_item.item.price * cart_item.quantity
-        total_price += cart_item.subtotal
+        subtotal = cart_item.item.price * cart_item.quantity
+        total_price += subtotal
         total_discount += cart_item.discount_amount
 
     total_discounted_price = total_price - total_discount
     final_total = total_discounted_price if total_discount > 0 else total_price
 
-    # Check for an existing Sales instance with the same total amount and user
-    sales, created = Sales.objects.get_or_create(
-        user=request.user,
-        total_amount=final_total
-    )
+    # Ensure a unique Sales instance
+    sales = Sales.objects.filter(user=request.user, total_amount=final_total).first()
+    if not sales:
+        sales = Sales.objects.create(user=request.user, total_amount=final_total)
 
-    if created:
-        # Create SalesItem and DispensingLog for each cart item
-        for cart_item in cart_items:
-            # Create SalesItem
-            SalesItem.objects.create(
+    try:
+        # Ensure a unique Receipt for the Sales instance
+        receipt = Receipt.objects.filter(sales=sales).first()
+        if not receipt:
+            receipt = Receipt.objects.create(
                 sales=sales,
-                item=cart_item.item,
-                quantity=cart_item.quantity,
-                price=cart_item.item.price
+                receipt_id=uuid.uuid4(),
+                total_amount=final_total,
+                buyer_name=buyer_name if not sales.customer else None,
+                buyer_address=buyer_address,
+                date=now()
             )
+    except Exception as e:
+        print(f"Error processing receipt: {e}")
+        messages.error(request, "An error occurred while processing the receipt.")
+        return redirect('cart')
 
-            # Create DispensingLog
-            DispensingLog.objects.create(
-                user=request.user,
-                name=cart_item.item.name,
-                unit=cart_item.item.unit,
-                quantity=cart_item.quantity,
-                amount=cart_item.subtotal
-            )
+    # Process cart items
+    for cart_item in cart_items:
+        SalesItem.objects.get_or_create(
+            sales=sales,
+            item=cart_item.item,
+            defaults={'quantity': cart_item.quantity, 'price': cart_item.item.price}
+        )
 
-    # Ensure a unique Receipt is created for the Sales instance
-    receipt, created = Receipt.objects.get_or_create(
-        sales=sales,
-        defaults={
-            'receipt_id': uuid.uuid4(),
-            'total_amount': final_total,
-            'buyer_name': buyer_name if not sales.customer else None,
-            'buyer_address': buyer_address,
-            'date': now()
-        }
-    )
+        # Create DispensingLog
+        subtotal = cart_item.item.price * cart_item.quantity
+        DispensingLog.objects.get_or_create(
+            user=request.user,
+            name=cart_item.item.name,
+            unit=cart_item.item.unit,
+            quantity=cart_item.quantity,
+            amount=subtotal,
+            status="Dispensed"
+        )
 
-    if created:
-        # Save receipt data to the session
-        request.session['receipt_data'] = {
-            'total_price': total_price,
-            'total_discount': total_discount,
-            'buyer_address': buyer_address,
-        }
-        request.session['receipt_id'] = str(receipt.receipt_id)
+    # Save receipt data in session
+    request.session['receipt_data'] = {
+        'total_price': float(total_price),
+        'total_discount': float(total_discount),
+        'buyer_address': buyer_address,
+    }
+    request.session['receipt_id'] = str(receipt.receipt_id)
 
-    # Delete the cart items after processing
+    # Clear cart
     cart_items.delete()
 
-    # Update daily and monthly sales
     daily_sales_data = get_daily_sales()
     monthly_sales_data = get_monthly_sales()
 
-    # Pass sales data to the receipt context (if needed)
     sales_items = sales.sales_items.all()
 
     return render(request, 'receipt.html', {
@@ -513,8 +541,9 @@ def receipt(request):
         'total_price': total_price,
         'total_discount': total_discount,
         'total_discounted_price': total_discounted_price,
-        'daily_sales': daily_sales_data,  # For additional context
-        'monthly_sales': monthly_sales_data,  # For additional context
+        'daily_sales': daily_sales_data,
+        'monthly_sales': monthly_sales_data,
+        'logs': DispensingLog.objects.filter(user=request.user)
     })
 
 
@@ -585,18 +614,31 @@ def manage_customers(request):
 
 
 
+
+
+
 @login_required
 def dispensing_log(request):
+    # Retrieve all dispensing logs ordered by the most recent
     logs = DispensingLog.objects.all().order_by('-created_at')
-    
-    if request.GET.get('date'):
-        selected_date = parse_date(request.GET.get('date'))
+
+    # Filter logs by the selected date if provided
+    if date_filter := request.GET.get('date'):
+        selected_date = parse_date(date_filter)
         if selected_date:
             logs = logs.filter(created_at__date=selected_date)
-    
+            return render(request, 'partials/partials_dispensing_log.html', {'logs': logs})
+
+    # Filter logs by status if provided
+    if status_filter := request.GET.get('status'):
+        logs = logs.filter(status=status_filter)
+
         return render(request, 'partials/partials_dispensing_log.html', {'logs': logs})
-    
+
+    # Render the full template for non-HTMX requests
     return render(request, 'dispensing_log.html', {'logs': logs})
+
+
 
 
 
@@ -843,11 +885,13 @@ def reset_wallet(request, pk):
 
 from decimal import Decimal
 
+
+
 @login_required
 def select_items(request, pk):
     customer = get_object_or_404(Customer, id=pk)
     items = Item.objects.all().order_by('name')
-    
+
     # Fetch wallet balance
     wallet_balance = Decimal('0.0')
     try:
@@ -856,61 +900,131 @@ def select_items(request, pk):
         messages.warning(request, 'This customer does not have an associated wallet.')
 
     if request.method == 'POST':
+        action = request.POST.get('action', 'purchase')  # Default to purchase
         item_ids = request.POST.getlist('item_ids')
         quantities = request.POST.getlist('quantities')
         discount_amounts = request.POST.getlist('discount_amounts', [])
         units = request.POST.getlist('units')  # Capture units for each item selected
-        
+
         if len(item_ids) != len(quantities):
-            messages.warning(request, 'Item IDs and quantities mismatch')
+            messages.warning(request, 'Item IDs and quantities mismatch.')
             return redirect('select_items', pk=pk)
 
         total_cost = Decimal('0.0')
+
+        # Fetch or create a Sales record
+        sales = Sales.objects.filter(user=request.user, customer=customer).first()
+        if not sales:
+            sales = Sales.objects.create(user=request.user, customer=customer, total_amount=Decimal('0.0'))
+
+        # Get or create the latest Receipt linked to the Sales record
+        receipt = Receipt.objects.filter(sales=sales).first()
+        if not receipt:
+            receipt = Receipt.objects.create(
+                customer=customer,
+                sales=sales,
+                total_amount=Decimal('0.0'),
+                date=timezone.now()
+            )
 
         for i, (item_id, quantity_str) in enumerate(zip(item_ids, quantities)):
             try:
                 item = Item.objects.get(id=item_id)
                 quantity = int(quantity_str)
                 discount = Decimal(discount_amounts[i]) if i < len(discount_amounts) else Decimal('0.0')
-                
-                if quantity > item.stock_quantity:
-                    messages.warning(request, f'Not enough stock for {item.name}')
-                    return redirect('select_items', pk=pk)
+                unit = units[i] if i < len(units) else item.unit  # Use item unit if no unit is provided
 
-                # Deduct the stock when adding the item to the cart
-                item.stock_quantity -= quantity
-                item.save()
+                if action == 'purchase':
+                    # Handle purchase logic
+                    if quantity > item.stock_quantity:
+                        messages.warning(request, f'Not enough stock for {item.name}.')
+                        return redirect('select_items', pk=pk)
 
-                # Check if item already in cart; if so, update it
-                cart_item, created = CartItem.objects.get_or_create(
-                    item=item,
-                    defaults={'quantity': quantity, 'discount_amount': discount}
-                )
-                if not created:
-                    cart_item.quantity += quantity
-                    cart_item.discount_amount += discount
-                    cart_item.unit = units  # Update or set unit
-                cart_item.save()
+                    item.stock_quantity -= quantity
+                    item.save()
 
-                # Calculate the subtotal dynamically and add it to total_cost
-                subtotal = (item.price * quantity) - discount
-                total_cost += subtotal
+                    # Create or update SalesItem
+                    sales_item, created = SalesItem.objects.get_or_create(
+                        sales=sales,
+                        item=item,
+                        defaults={'quantity': quantity, 'price': item.price}
+                    )
+                    if not created:
+                        sales_item.quantity += quantity
+                        sales_item.save()
 
+                    # Calculate subtotal and log dispensing
+                    subtotal = (item.price * quantity) - discount
+                    total_cost += subtotal
+                    DispensingLog.objects.create(
+                        user=request.user,
+                        name=item.name,
+                        unit=unit,
+                        quantity=quantity,
+                        amount=subtotal,
+                        status='Dispensed'
+                    )
+
+                elif action == 'return':
+                    # Handle return logic
+                    item.stock_quantity += quantity
+                    item.save()
+
+                    try:
+                        sales_item = sales.sales_items.get(item=item)
+
+                        if sales_item.quantity < quantity:
+                            messages.warning(request, f"Cannot return more {item.name} than purchased.")
+                            return redirect('select_items', pk=pk)
+
+                        # Reduce the quantity of the SalesItem or delete it
+                        sales_item.quantity -= quantity
+                        if sales_item.quantity == 0:
+                            sales_item.delete()
+                        else:
+                            sales_item.save()
+
+                        # Adjust the Sales total amount
+                        refund_amount = (item.price * quantity) - discount
+                        sales.total_amount -= refund_amount
+                        total_cost -= refund_amount
+                        sales.save()
+
+                        # Log the return in DispensingLog
+                        DispensingLog.objects.create(
+                            user=request.user,
+                            name=item.name,
+                            unit=unit,
+                            quantity=quantity,
+                            amount=refund_amount,
+                            status='Returned'
+                        )
+                    except SalesItem.DoesNotExist:
+                        messages.warning(request, f"Item {item.name} is not part of the sales.")
+                        return redirect('select_items', pk=pk)
 
             except Item.DoesNotExist:
-                messages.warning(request, 'One of the items does not exist')
+                messages.warning(request, 'One of the items does not exist.')
                 return redirect('select_items', pk=pk)
-        
-        # Deduct the total cost from the customer's wallet
+
+        # Update the customer's wallet balance
         try:
             wallet = customer.wallet
-            wallet.balance -= total_cost
+            if action == 'purchase':
+                wallet.balance -= total_cost
+            elif action == 'return':
+                wallet.balance += abs(total_cost)
             wallet.save()
         except Wallet.DoesNotExist:
-            messages.warning(request, 'Customer does not have a wallet')
+            messages.warning(request, 'Customer does not have a wallet.')
             return redirect('select_items', pk=pk)
-        
-        messages.success(request, f'{quantity} {item.unit} of {item.name} successfully added to the cart.')
+
+        # Update the Receipt total amount
+        receipt.total_amount = sales.total_amount
+        receipt.save()
+
+        action_message = 'added to cart' if action == 'purchase' else 'returned successfully'
+        messages.success(request, f'Action completed: Items {action_message}.')
         return redirect('cart')
 
     return render(request, 'partials/select_items.html', {

@@ -14,9 +14,85 @@
 <body>
     {% block content %}
     <style>
-        .col-md-9 {
-            margin-left: 10em;
+        .col-md-10 {
+            margin-left: 12em;
             margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .table-hover th,
+        .table-hover td {
+            text-align: center;
+        }
+
+        /* Media Queries */
+
+        /* For tablets and smaller devices */
+        @media (max-width: 768px) {
+            .col-md-10 {
+                margin-left: 0;
+                margin-top: 20px;
+                padding: 0 15px;
+            }
+
+            table {
+                font-size: 0.9rem;
+                /* Reduce font size for smaller screens */
+            }
+
+            .btn {
+                font-size: 0.8rem;
+                /* Adjust button size */
+                padding: 5px 10px;
+            }
+        }
+
+        /* For mobile devices */
+        @media (max-width: 480px) {
+            .col-md-10 {
+                margin-left: 0;
+                margin-top: 15px;
+                padding: 0 10px;
+            }
+
+            table {
+                font-size: 0.8em;
+                width: 45%;
+                margin-left: 1em;
+            }
+
+            .btn {
+                font-size: 0.7rem;
+                padding: 4px 8px;
+            }
+
+            thead {
+                display: none;
+                /* Hide table header for mobile screens */
+            }
+
+            tbody tr {
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 10px;
+                border-bottom: 1px solid #ddd;
+            }
+
+            tbody td {
+                text-align: left;
+                display: flex;
+                justify-content: space-between;
+                padding: 3px 7px;
+            }
+
+            tbody td::before {
+                content: attr(data-label);
+                font-weight: bold;
+            }
         }
     </style>
 
@@ -25,7 +101,7 @@
         {% for message in messages %}
         <div style="text-align: center;" class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
-        <h2 style="text-align: center;">WHOLESALE CUSTOMERS LIST</h2>
+        <h3 style="text-align: center;">WHOLESALE CUSTOMERS LIST</h3>
         <table class="table table-hover mt-3" style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.3)">
             <thead class="table-primary">
                 <tr>
@@ -40,8 +116,8 @@
             <tbody>
                 {% for customer in customers %}
                 <tr>
-                    <td>{{ forloop.counter }}.</td>
-                    <td>
+                    <td data-label="SN">{{ forloop.counter }}.</td>
+                    <td data-label="WALLET">
                         <a href="{% url 'wholesale_customer_wallet_details' customer.id %}"
                             hx-get="{% url 'wholesale_customer_wallet_details' customer.id %}" hx-target="#wallet-info"
                             hx-trigger="click" class="btn btn-success btn-sm">Wallet</a>
@@ -49,17 +125,13 @@
                         <a href="{% url 'delete_wholesale_customer' customer.id %}" class="btn btn-sm btn-danger"
                             onclick="return confirm('Are you sure you want to delete {{customer.name}} from the List?')">x</a>
                     </td>
-                    <td>{{ customer.name|upper }}</td>
-                    <td>{{ customer.phone }}</td>
-                    <td>{{ customer.address|upper }}</td>
-                    <td>
+                    <td data-label="CUSTOMERS">{{ customer.name|upper }}</td>
+                    <td data-label="PHONE">{{ customer.phone }}</td>
+                    <td data-label="ADDRESS">{{ customer.address|upper }}</td>
+                    <td data-label="ACTION">
                         <a type="button" class="btn btn-sm btn-primary"
                             hx-get="{% url 'select_wholesale_items' customer.id %}" hx-target="#item-selection"
                             hx-swap="innerHTML">Select item</a>
-
-                        <!-- <a href=""
-                            hx-get="{% url 'wholesale_transactions' customer.id %}" hx-target="#wallet-info"
-                            hx-trigger="click" class="btn btn-warning btn-sm">History</a> -->
 
                         <a class="btn btn-sm btn-info" data-bs-toggle="modal"
                             data-bs-target="#editWholesaleCustomerModal"

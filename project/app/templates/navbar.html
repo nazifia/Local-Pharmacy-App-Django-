@@ -76,8 +76,23 @@
 
     <!-- Media Queries for Navbar -->
     <style>
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            /* Ensure it stays above other elements */
+        }
+
+
         /* For tablets and smaller devices */
         @media (max-width: 768px) {
+            .navbar {
+                position: sticky;
+                top: 0;
+                z-index: 1020;
+                /* Ensure it stays above other elements */
+            }
+
             .navbar-nav {
                 flex-direction: column;
             }
@@ -89,10 +104,19 @@
             .navbar-brand {
                 font-size: 1.2rem;
             }
+
+
         }
 
         /* For mobile devices */
         @media (max-width: 480px) {
+            .navbar {
+                position: sticky;
+                top: 0;
+                z-index: 1020;
+                /* Ensure it stays above other elements */
+            }
+
             .navbar-brand {
                 font-size: 1rem;
             }
@@ -114,24 +138,24 @@
             }
         }
     </style>
-
-    <!-- Edit User Profile Modal -->
-    <div class="modal fade" id="editUserProfileModal" tabindex="-1" aria-labelledby="editUserProfileModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Change User Password Modal -->
-    <div class="modal fade" id="changeUserPasswordModal" tabindex="-1" aria-labelledby="changeUserPasswordModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-            </div>
-        </div>
-    </div>
 </nav>
+
+<!-- Edit User Profile Modal -->
+<div class="modal fade" id="editUserProfileModal" tabindex="-1" aria-labelledby="editUserProfileModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+        </div>
+    </div>
+</div>
+
+<!-- Change User Password Modal -->
+<div class="modal fade" id="changeUserPasswordModal" tabindex="-1" aria-labelledby="changeUserPasswordModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+        </div>
+    </div>
+</div>

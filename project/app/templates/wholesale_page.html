@@ -16,8 +16,12 @@
     {% block content %}
     <style>
         .container {
+            display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            width: 1200px;
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
         }
 
         .links {
@@ -25,17 +29,27 @@
             position: fixed;
             background-color: rgb(239, 238, 238);
             height: calc(100vh - 45px);
+            padding: 10px;
             margin-right: 10px;
+        }
+
+        .links ul {
+            padding: 0;
         }
 
         .links a {
             text-decoration: none;
+            color: #000;
         }
 
         .links li {
             list-style: none;
-            margin: 10px;
-            margin-left: -10px;
+            margin: 10px 0;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+            color: #007bff;
         }
 
         .chart-container {
@@ -43,7 +57,70 @@
             width: 100%;
             height: 400px;
         }
+
+        /* Media Queries */
+
+        /* Tablets and smaller devices */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                flex-direction: column;
+            }
+
+            .links {
+                width: 180px;
+                position: static;
+                margin: 0 auto 20px auto;
+                height: auto;
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            }
+
+            .links ul {
+                text-align: center;
+            }
+
+            .links li {
+                margin: 5px 0;
+            }
+
+            .links a {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Mobile devices */
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+
+            .links {
+                width: 100%;
+                padding: 10px 0;
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+
+            .links ul {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-around;
+            }
+
+            .links li {
+                margin: 5px;
+            }
+
+            .links a {
+                font-size: 0.8rem;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
     </style>
+
     <div class="links">
         <ul>
             <li>
@@ -71,19 +148,15 @@
                 <a href="{% url 'wholesale_customers' %}" hx-get="{% url 'wholesale_customers' %}"
                     hx-target="#display">Wholesale Customers</a>
             </li>
-
         </ul>
     </div>
+
     <div class="container">
         <div id="display">
             <!-- Sales data will be loaded here dynamically via HTMX -->
             <h3 style="text-align: center;">Click on the link for info</h3>
         </div>
     </div>
-
-
-
-
 
     <div class="modal fade" id="registerWholesaleCustomerModal" tabindex="-1"
         aria-labelledby="registerWholesaleCustomerModalLabel" aria-hidden="true">
@@ -105,11 +178,6 @@
             </div>
         </div>
     </div>
-
-
-
-
-
 
     {% endblock %}
 </body>

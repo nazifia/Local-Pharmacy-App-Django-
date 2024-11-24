@@ -58,7 +58,7 @@
                     <td>{{ sales_item.item.unit }}</td>
                     <td>{{ sales_item.quantity }} </td>
                     <td>₦{{ sales_item.price }}</td>
-                    <td>₦{{ sales_item.price|floatformat:2 }}</td>
+                    <td>₦{{ sales_item.subtotal|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

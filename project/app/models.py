@@ -154,15 +154,23 @@ class DispensingLog(models.Model):
         ('VAIL', 'Vail'),
         ('UNDEFINED', 'Undefined'),
     ]
+
+    STATUS_CHOICES = [
+        ('Returned', 'Returned'),
+        ('Partially Returned', 'Partially Returned'),
+        ('Dispensed', 'Dispensed'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='UNDEFINED')
     quantity = models.PositiveIntegerField(default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Dispensed')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.user.username} - {self.name} ({self.quantity} {self.unit})'
+        return f'{self.user.username} - {self.name} ({self.quantity} {self.unit} {self.status})'
 
 
 class Customer(models.Model):
@@ -267,6 +275,7 @@ class TransactionHistory(models.Model):
 class Sales(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
+    wholesale_customer = models.ForeignKey(WholesaleCustomer, on_delete=models.CASCADE, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     date = models.DateField(auto_now_add=True)
 

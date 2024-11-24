@@ -14,9 +14,17 @@
 <body>
     {% block content %}
 
-
     <h3 style="color: red;">Select for: {{ customer.name }}</h3>
     <h4>Wallet Balance: ₦ {{ wallet_balance }}</h4>
+
+    <!-- Action selection (purchase or return) -->
+    <div class="mb-4">
+        <label for="action" class="form-label">Action:</label>
+        <select id="action" class="form-select" name="action" form="item-form">
+            <option value="purchase" selected>Purchase</option>
+            <option value="return">Return</option>
+        </select>
+    </div>
 
     <!-- Search field to filter items -->
     <div class="mb-3">
@@ -24,8 +32,10 @@
             hx-get="{% url 'search_customer_items' customer.id %}" hx-trigger="keyup changed delay:500ms"
             hx-target="#for-customer" hx-swap="outerHTML" style="background-color: rgb(210, 247, 253);">
     </div>
+
     <a class="btn btn-sm btn-secondary" href="{{ request.META.HTTP_REFERER }}">Back</a>
-    <form method="post" action="{% url 'select_wholesale_items' pk=customer.id %}">
+
+    <form method="post" action="{% url 'select_wholesale_items' pk=customer.id %}" id="item-form">
         {% csrf_token %}
         <div id="item-selection">
             <table class="table table-hover">
@@ -58,7 +68,7 @@
                 </tbody>
             </table>
         </div>
-        <button type="submit" class="btn btn-success">Proceed with Purchase</button>
+        <button type="submit" class="btn btn-success">Proceed with Action</button>
     </form>
 
     <script>
@@ -68,6 +78,17 @@
                 const quantityInput = this.closest('tr').querySelector('input[type="number"]');
                 quantityInput.disabled = !this.checked;
             });
+        });
+
+        // Update form action dynamically based on selected action
+        const actionSelect = document.getElementById('action');
+        actionSelect.addEventListener('change', function () {
+            const form = document.getElementById('item-form');
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = this.value;
+            form.appendChild(actionInput);
         });
     </script>
 
