@@ -61,7 +61,7 @@
             {% elif receipt.buyer_name %}
             {{ receipt.buyer_name|upper }}
             {% else %}
-            Anonymous
+            WALK-IN CUSTOMER
             {% endif %}
         </p>
         <p><strong>Customer Address:</strong>
@@ -99,6 +99,7 @@
             </tbody>
         </table>
         <p style="text-align: end;"><strong>Total Amount: ₦{{ receipt.total_amount }}</strong></p>
+        <p style="text-align: end;"><strong>Payment Method: ₦{{ receipt.payment_method }}</strong></p>
 
         <button class="btn btn-outline-success btn-sm ml-2" onclick="window.print()">Reprint Receipt</button>
 

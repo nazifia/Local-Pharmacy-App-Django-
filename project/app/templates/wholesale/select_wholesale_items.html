@@ -20,18 +20,19 @@
     <!-- Action selection (purchase or return) -->
     <div class="mb-4">
         <label for="action" class="form-label">Action:</label>
-        <select id="action" class="form-select" name="action" form="item-form">
+        <select id="action" class="form-select" name="action" form="item-form"
+            style="background-color: rgb(252, 182, 182);">
             <option value="purchase" selected>Purchase</option>
             <option value="return">Return</option>
         </select>
     </div>
 
     <!-- Search field to filter items -->
-    <div class="mb-3">
+    <!-- <div class="mb-3">
         <input type="text" class="form-control" id="item-search" name="query" placeholder="Search for items..."
-            hx-get="{% url 'search_customer_items' customer.id %}" hx-trigger="keyup changed delay:500ms"
+            hx-get="" hx-trigger="keyup changed delay:500ms"
             hx-target="#for-customer" hx-swap="outerHTML" style="background-color: rgb(210, 247, 253);">
-    </div>
+    </div> -->
 
     <a class="btn btn-sm btn-secondary" href="{{ request.META.HTTP_REFERER }}">Back</a>
 

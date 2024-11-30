@@ -82,7 +82,7 @@
                 <tbody>
                     {% for item in expiring_items %}
                     <tr>
-                        <td>{{ forloop.counter}}</td>
+                        <td>{{ forloop.counter}}.</td>
                         <td>{{ item.name|title }}</td>
                         <td style="color: rgb(255, 6, 230);">{{ item.exp_date }}</td>
                     </tr>
@@ -108,7 +108,7 @@
                 <tbody>
                     {% for item in expired_items %}
                     <tr>
-                        <td>{{ forloop.counter}}</td>
+                        <td>{{ forloop.counter}}.</td>
                         <td>{{ item.name|title }}</td>
                         <td style="color: rgb(255, 20, 12);">{{ item.exp_date }}</td>
                     </tr>

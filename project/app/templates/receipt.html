@@ -27,15 +27,28 @@
         style="text-align: center;">
         {% csrf_token %}
         <label for="buyer_name">Buyer's Name:</label>
-        <input type="text" id="buyer_name" name="buyer_name" value="{{ receipt.buyer_name|upper }}" placeholder=""
-            style="border: none; border-bottom:1px solid grey; margin-bottom: 3px;">
+        <input type="text" id="buyer_name" name="buyer_name" value="{{ receipt.buyer_name|upper }}"
+            placeholder="WALK-IN CUSTOMER" style="border: none; border-bottom:1px solid grey; margin-bottom: 3px;">
         <div class="box">
             <label for="buyer_address">Buyer's Address:</label>
             <input type="text" id="buyer_address" name="buyer_address" value="{{ receipt.buyer_address|upper }}"
-                placeholder placeholder="" style="border: none; border-bottom:1px solid grey;">
+                placeholder="" style="border: none; border-bottom:1px solid grey;">
         </div>
-    </form>
+        <br>
+        <br>
+        <!-- Trigger Button -->
+        <button type="button" class="btn-outline-primary btn-sm" id="paymentMethodButton" class="btn btn-primary"
+            data-bs-toggle="modal" data-bs-target="#paymentMethodModal">
+            {% if receipt.payment_method %}
+            Payment Method: {{ receipt.payment_method }}
+            {% else %}
+            Select Payment Method
+            {% endif %}
+        </button>
 
+        <!-- Hidden Input for Payment Method -->
+        <input type="hidden" name="payment_method" id="paymentMethodInput" value="{{ receipt.payment_method }}">
+    </form>
 
     {% if sales_items %}
     <div class="col-md-8 offset-md-2 mt-5">
@@ -64,6 +77,7 @@
             </tbody>
         </table>
         <h6 style="text-align:end;">Total Price: ₦{{ total_price|floatformat:2 }}</h6>
+
         {% if total_discounted_price %}
         <h4 style="text-align:end;">Total Payable: ₦{{ total_discounted_price|floatformat:2 }}</h4>
         {% endif %}
@@ -78,6 +92,29 @@
         <p style="text-align: center;">___Thank you for patronage___</p>
     </footer>
 
+    <!-- Modal -->
+    <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-labelledby="paymentMethodModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentMethodModalLabel">Select Payment Method</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        {% for method in payment_methods %}
+                        <li class="list-group-item list-group-item-action {% if receipt.payment_method == method %}active{% endif %}"
+                            onclick="selectPaymentMethod('{{ method }}')">
+                            {{ method }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function submitFormAndPrint() {
             // Submit the form programmatically
@@ -89,6 +126,18 @@
                 // Redirect to the view cart page after printing
                 window.location.href = "{% url 'view_cart' %}";
             }, 500);
+        }
+
+        function selectPaymentMethod(method) {
+            // Update the hidden input with the selected payment method
+            document.getElementById('paymentMethodInput').value = method;
+
+            // Update the button text with the selected payment method
+            document.getElementById('paymentMethodButton').textContent = `Payment Method: ${method}`;
+
+            // Close the modal
+            var modal = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
+            modal.hide();
         }
     </script>
 </body>

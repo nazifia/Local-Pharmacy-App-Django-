@@ -42,7 +42,7 @@ urlpatterns = [
     path('receipt_id/', views.receipt_id, name='receipt_id'),
     path('retrieve-receipt/', views.retrieve_receipt, name='retrieve_receipt'),
     path('reprint-receipt/<uuid:receipt_id>/', views.reprint_receipt, name='reprint_receipt'),
-    path('activity_logs/', views.activity_logs, name='activities'),
+    # path('activity_logs/', views.activity_logs, name='activities'),
     path('receipts/', views.receipt_list, name='receipt_list'),
     path('receipts/<uuid:receipt_id>/', views.receipt_detail, name='receipt_detail'),
 ]

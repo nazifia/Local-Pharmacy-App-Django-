@@ -82,7 +82,7 @@ def edit_wholesale_item(request, pk):
         if request.headers.get('HX-Request'):
             return render(request, 'wholesale/edit_wholesale_item.html', {'form': form, 'item': item})
         else:
-            return render(request, 'wholesales.html')
+            return render(request, 'wholesale/wholesales.html')
     else:
         return redirect('index')
 
@@ -90,69 +90,129 @@ def edit_wholesale_item(request, pk):
 
 @login_required
 def return_wholesale_item(request, pk):
-    if request.user.is_authenticated:
-        item = get_object_or_404(Wholesale, id=pk)
-        if request.method == 'POST':
-            form = ReturnWholesaleItemForm(request.POST)
-            if form.is_valid():
-                return_quantity = form.cleaned_data.get('return_item_quantity')
-                if return_quantity <= 0:
-                    messages.warning(request, 'Invalid return item quantity')
-                    return redirect('wholesales')
+    item = get_object_or_404(Wholesale, id=pk)
 
-                try:
-                    with transaction.atomic():
-                        item.stock_quantity += return_quantity
-                        item.save()
-                        
-                        sales_item = WholesaleSalesItem.objects.filter(item=item, quantity__gte=return_quantity).first()
-                        if not sales_item:
-                            messages.warning(request, f'No matching sales record found for {item.name}.')
-                            return redirect('wholesales')
+    if request.method == 'POST':
+        form = ReturnWholesaleItemForm(request.POST)
+        if form.is_valid():
+            return_quantity = form.cleaned_data.get('return_item_quantity')
 
-                        if sales_item.quantity > return_quantity:
-                            sales_item.quantity -= return_quantity
-                            sales_item.save()
-                        else:
-                            sales_item.delete()
+            # Validate the return quantity
+            if return_quantity <= 0:
+                messages.warning(request, 'Invalid return item quantity.')
+                return redirect('wholesales')
 
-                        sales = sales_item.sales
-                        sales.calculate_total_amount()
+            try:
+                with transaction.atomic():
+                    # Update item stock
+                    item.stock_quantity += return_quantity
+                    item.save()
 
-                        if sales.customer and sales.customer.wallet:
-                            wallet = sales.customer.wallet
-                            refund_amount = return_quantity * sales_item.price
-                            wallet.balance += refund_amount
-                            wallet.save()
-
-                            TransactionHistory.objects.create(
-                                customer=sales.customer,
-                                transaction_type='refund',
-                                amount=refund_amount,
-                                description=f'Refund for {return_quantity} of {item.name}'
-                            )
-
-                        dispensing_log = DispensingLog.objects.filter(
-                            user=sales.user, name=item.name, quantity=return_quantity
-                        ).first()
-                        if dispensing_log:
-                            dispensing_log.delete()
-
-                        messages.success(request, f'{return_quantity} {item.unit} of {item.name} successfully returned.')
+                    # Find the sales item associated with the returned item
+                    sales_item = WholesaleSalesItem.objects.filter(item=item).order_by('-quantity').first()
+                    if not sales_item or sales_item.quantity < return_quantity:
+                        messages.warning(request, f'No valid sales record found for {item.name}.')
                         return redirect('wholesales')
-                
-                except Exception as e:
-                    messages.warning(request, f'Error processing return: {e}')
-                    return redirect('wholesales')
-        else:
-            form = ReturnWholesaleItemForm(instance=item)
 
-        if request.headers.get('HX-Request'):
-            return render(request, 'wholesale/return_wholesale_item.html', {'form': form, 'item': item})
+                    # Calculate refund and update sales item
+                    refund_amount = return_quantity * sales_item.price
+                    if sales_item.quantity > return_quantity:
+                        sales_item.quantity -= return_quantity
+                        sales_item.save()
+                    else:
+                        sales_item.delete()
+
+                    # Update sales total
+                    sales = sales_item.sales
+                    sales.total_amount -= refund_amount
+                    sales.save()
+
+                    # Process wallet refund if applicable
+                    if sales.customer and hasattr(sales.customer, 'wholesale_customer_wallet'):
+                        wallet = sales.customer.wholesale_customer_wallet
+                        wallet.balance += refund_amount
+                        wallet.save()
+
+                        # Log the refund transaction
+                        TransactionHistory.objects.create(
+                            customer=sales.customer,
+                            transaction_type='refund',
+                            amount=refund_amount,
+                            description=f'Refund for {return_quantity} of {item.name}'
+                        )
+                        messages.success(
+                            request,
+                            f'{return_quantity} of {item.name} successfully returned, and ₦{refund_amount} refunded to the wallet.'
+                        )
+                    else:
+                        messages.warning(request, 'Customer wallet not found or not associated.')
+
+
+                    # Update dispensing log
+                    logs = DispensingLog.objects.filter(
+                        user=sales.user, 
+                        name=item.name, 
+                        status__in=['Dispensed', 'Partially Returned']
+                    ).order_by('created_at')
+
+                    total_returned = return_quantity
+                    for log in logs:
+                        if total_returned <= 0:
+                            break
+                        if log.quantity <= total_returned:
+                            total_returned -= log.quantity
+                            log.delete()
+                        else:
+                            log.quantity -= total_returned
+                            log.status = 'Partially Returned' if log.quantity > 0 else 'Returned'
+                            log.save()
+                            total_returned = 0
+
+                    if total_returned > 0:
+                        messages.warning(
+                            request,
+                            f"Some of the returned quantity could not be processed. Exceeds dispensed records."
+                        )
+                        return redirect('wholesales')
+
+
+
+                    # Update daily and monthly sales data
+                    daily_sales = get_daily_sales()
+                    monthly_sales = get_monthly_sales()
+
+                    # Render updated logs for HTMX requests
+                    if request.headers.get('HX-Request'):
+                        context = {
+                            'logs': DispensingLog.objects.all().order_by('-created_at'),
+                            'daily_sales': daily_sales,
+                            'monthly_sales': monthly_sales
+                        }
+                        return render(request, 'app/dispensing_log.html', context)
+
+                    messages.success(
+                        request,
+                        f'{return_quantity} of {item.name} successfully returned, sales and logs updated.'
+                    )
+                    return redirect('wholesales')
+
+            except Exception as e:
+                # Handle exceptions during atomic transaction
+                print(f'Error during item return: {e}')
+                messages.error(request, f'Error processing return: {e}')
+                return redirect('wholesales')
         else:
-            return render(request, 'wholesales.html')
+            messages.warning(request, 'Invalid input. Please correct the form and try again.')
+
     else:
-        return redirect('index')
+        # Display the return form in a modal or a page
+        form = ReturnWholesaleItemForm()
+
+    # Return appropriate response for HTMX or full-page requests
+    if request.headers.get('HX-Request'):
+        return render(request, 'wholesale/return_wholesale_item.html', {'form': form, 'item': item})
+    else:
+        return render(request, 'wholesale/wholesales.html', {'form': form})
 
 
 
@@ -239,7 +299,7 @@ def add_to_wholesale_cart(request, item_id):
 
 
 
-
+@transaction.atomic
 @login_required
 def select_wholesale_items(request, pk):
     customer = get_object_or_404(WholesaleCustomer, id=pk)
@@ -261,7 +321,7 @@ def select_wholesale_items(request, pk):
 
         if len(item_ids) != len(quantities):
             messages.warning(request, 'Mismatch between selected items and quantities.')
-            return redirect('select_wholesale_items', pk=pk)
+            return redirect('select_items', pk=pk)
 
         total_cost = Decimal('0.0')
 
@@ -296,7 +356,7 @@ def select_wholesale_items(request, pk):
                     # Check stock and update inventory
                     if quantity > item.stock_quantity:
                         messages.warning(request, f'Not enough stock for {item.name}.')
-                        return redirect('select_wholesale_items', pk=pk)
+                        return redirect('select_items', pk=pk)
 
                     item.stock_quantity -= quantity
                     item.save()
@@ -315,14 +375,14 @@ def select_wholesale_items(request, pk):
                     # Calculate subtotal and log dispensing
                     subtotal = (item.price * quantity) - discount
                     total_cost += subtotal
-                    DispensingLog.objects.create(
-                        user=request.user,
-                        name=item.name,
-                        unit=unit,
-                        quantity=quantity,
-                        amount=subtotal,
-                        status='Dispensed'
-                    )
+                    # DispensingLog.objects.create(
+                    #     user=request.user,
+                    #     name=item.name,
+                    #     unit=unit,
+                    #     quantity=quantity,
+                    #     amount=subtotal,
+                    #     status='Dispensed'
+                    # )
 
                     # Update or create WholesaleSalesItem
                     sales_item, created = WholesaleSalesItem.objects.get_or_create(
@@ -348,7 +408,7 @@ def select_wholesale_items(request, pk):
 
                         if sales_item.quantity < quantity:
                             messages.warning(request, f"Cannot return more {item.name} than purchased.")
-                            return redirect('wholesale_customers')
+                            return redirect('customer_list')
 
                         sales_item.quantity -= quantity
                         if sales_item.quantity == 0:
@@ -366,7 +426,7 @@ def select_wholesale_items(request, pk):
                             unit=unit,
                             quantity=quantity,
                             amount=refund_amount,
-                            status='Returned'
+                            status='Partially Returned' if sales_item.quantity > 0 else 'Returned'  # Status based on remaining quantity
                         )
 
                         total_cost -= refund_amount
@@ -375,7 +435,7 @@ def select_wholesale_items(request, pk):
                         receipt.total_amount -= refund_amount
                         receipt.save()
 
-                    except WholesaleSalesItem.DoesNotExist:
+                    except WholesaleCartItem.DoesNotExist:
                         messages.warning(request, f"Item {item.name} is not part of the sales.")
                         return redirect('select_wholesale_items', pk=pk)
 
@@ -518,7 +578,7 @@ def clear_wholesale_cart(request):
                 messages.success(request, 'Cart cleared, items returned to stock, and wallet transactions reversed.')
 
         except Exception as e:
-            messages.error(request, f"An error occurred: {e}")
+            messages.warning(request, f"An error occurred: {e}")
             print(f"Error during clear_wholesale_cart: {e}")
 
     return redirect('wholesale_cart')
@@ -526,7 +586,7 @@ def clear_wholesale_cart(request):
 
 
 
-
+@transaction.atomic
 @login_required
 def wholesale_receipt(request):
     buyer_name = request.POST.get('buyer_name', '')
@@ -538,83 +598,92 @@ def wholesale_receipt(request):
         messages.warning(request, "No items in the cart.")
         return redirect('wholesale_cart')
 
-    total_price, total_discount = Decimal(0), Decimal(0)
+    total_price, total_discount = 0, 0
 
     # Calculate totals
     for cart_item in cart_items:
-        cart_item.subtotal = cart_item.item.price * cart_item.quantity
-        total_price += cart_item.subtotal
+        subtotal = cart_item.item.price * cart_item.quantity
+        total_price += subtotal
         total_discount += cart_item.discount_amount
 
     total_discounted_price = total_price - total_discount
     final_total = total_discounted_price if total_discount > 0 else total_price
 
-    # Always create a new Sales instance
-    sales = Sales.objects.create(
-        user=request.user,
-        total_amount=final_total
-    )
+    # Ensure a unique Sales instance
+    sales = Sales.objects.filter(user=request.user, total_amount=final_total).first()
+    if not sales:
+        sales = Sales.objects.create(user=request.user, total_amount=final_total)
 
-    # Create SalesItem and DispensingLog for each cart item
+    try:
+        # Ensure a unique Receipt for the Sales instance
+        receipt = Receipt.objects.filter(sales=sales).first()
+        if not receipt:
+            # receipt view
+            payment_method = request.POST.get('payment_method', 'Cash')  # Default to 'Cash' if not provided
+            receipt = Receipt.objects.create(
+                sales=sales,
+                receipt_id=uuid.uuid4(),
+                total_amount=final_total,
+                buyer_name=buyer_name if not sales.customer else None,
+                buyer_address=buyer_address,
+                date=now(),
+                payment_method=payment_method  # Save payment method
+                )
+
+    except Exception as e:
+        print(f"Error processing receipt: {e}")
+        messages.warning(request, "An error occurred while processing the receipt.")
+        return redirect('wholesale_cart')
+
+    # Process cart items
     for cart_item in cart_items:
-        # Create SalesItem
-        WholesaleSalesItem.objects.create(
+        WholesaleSalesItem.objects.get_or_create(
             sales=sales,
             item=cart_item.item,
-            quantity=cart_item.quantity,
-            price=cart_item.item.price
+            defaults={'quantity': cart_item.quantity, 'price': cart_item.item.price}
         )
 
         # Create DispensingLog
+        subtotal = cart_item.item.price * cart_item.quantity
         DispensingLog.objects.create(
             user=request.user,
             name=cart_item.item.name,
             unit=cart_item.item.unit,
             quantity=cart_item.quantity,
-            amount=cart_item.subtotal
+            amount=subtotal,
+            status="Dispensed"
         )
 
-    # Always create a new Receipt instance
-    receipt, created = Receipt.objects.get_or_create(
-        sales=sales,
-        defaults={
-            'receipt_id':uuid.uuid4(),
-            'total_amount':final_total,
-            'buyer_name':buyer_name if not sales.customer else None,
-            'buyer_address':buyer_address,
-            'date':now()            
-        }
-    )
-    
-    if created:
-        # Convert Decimal values to float before saving to the session
-        request.session['receipt_data'] = {
-            'total_price': float(total_price),
-            'total_discount': float(total_discount),
-            'buyer_address': buyer_address,
-        }
-        request.session['receipt_id'] = str(receipt.receipt_id)
-    
+    # Save receipt data in session
+    request.session['receipt_data'] = {
+        'total_price': float(total_price),
+        'total_discount': float(total_discount),
+        'buyer_address': buyer_address,
+    }
+    request.session['receipt_id'] = str(receipt.receipt_id)
 
-    # Delete the cart items after processing
+    # Clear cart
     cart_items.delete()
 
-    # Update daily and monthly sales
     daily_sales_data = get_daily_sales()
     monthly_sales_data = get_monthly_sales()
 
-    # Pass sales data to the receipt context (if needed)
     sales_items = sales.wholesale_sales_items.all()
-
+    
+    payment_methods = ["Cash", "Wallet", "Transfer"]
+    # receipt = get_object_or_404(Receipt, id=request.session.get('receipt_id'))  # Example
+    
     return render(request, 'wholesale/wholesale_receipt.html', {
-        'receipt': receipt,
-        'sales_items': sales_items,
-        'total_price': total_price,
-        'total_discount': total_discount,
-        'total_discounted_price': total_discounted_price,
-        'daily_sales': daily_sales_data,  # For additional context
-        'monthly_sales': monthly_sales_data,  # For additional context
-    })
+    'receipt': receipt,
+    'sales_items': sales_items,
+    'total_price': total_price,
+    'total_discount': total_discount,
+    'total_discounted_price': total_discounted_price,
+    'daily_sales': daily_sales_data,
+    'monthly_sales': monthly_sales_data,
+    'logs': DispensingLog.objects.filter(user=request.user),
+    'payment_methods': payment_methods,
+})
 
 
 
@@ -642,6 +711,9 @@ def wholesale_receipt_detail(request, receipt_id):
         if buyer_address:
             receipt.buyer_address = buyer_address
         
+        payment_method = request.POST.get('payment_method')
+        if payment_method:
+            receipt.payment_method = payment_method
         receipt.save()
 
         # Redirect to the same page to reflect updated details

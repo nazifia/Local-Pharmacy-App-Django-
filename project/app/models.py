@@ -12,25 +12,43 @@ from django.db import models
 class Item(models.Model):
     MARKUP_CHOICES = [
         (0, 'No markup'),
+        (2.5, '2.5% markup'),
         (5, '5% markup'),
+        (7.5, '7.5% markup'),
         (10, '10% markup'),
+        (12.5, '12.5% markup'),
         (15, '15% markup'),
+        (17.5, '17.5% markup'),
         (20, '20% markup'),
+        (22.5, '22.5% markup'),
         (25, '25% markup'),
+        (27.5, '27.5% markup'),
         (30, '30% markup'),
+        (32.5, '32.5% markup'),
         (35, '35% markup'),
+        (37.5, '37.5% markup'),
         (40, '40% markup'),
+        (42.5, '42.5% markup'),
         (45, '45% markup'),
+        (47.5, '47.5% markup'),
         (50, '50% markup'),
-        (55, '55% markup'),
+        (57.5, '57.5% markup'),
         (60, '60% markup'),
+        (62.5, '62.5% markup'),
         (65, '65% markup'),
+        (67.5, '67.5% markup'),
         (70, '70% markup'),
+        (72., '72.% markup'),
         (75, '75% markup'),
+        (77.5, '77.5% markup'),
         (80, '80% markup'),
+        (82.5, '82.% markup'),
         (85, '85% markup'),
+        (87.5, '87.5% markup'),
         (90, '90% markup'),
+        (92., '92.% markup'),
         (95, '95% markup'),
+        (97.5, '97.5% markup'),
         (100, '100% markup'),
     ]
     
@@ -72,25 +90,43 @@ class Item(models.Model):
 class Wholesale(models.Model):
     MARKUP_CHOICES = [
         (0, 'No markup'),
+        (2.5, '2.5% markup'),
         (5, '5% markup'),
+        (7.5, '7.5% markup'),
         (10, '10% markup'),
+        (12.5, '12.5% markup'),
         (15, '15% markup'),
+        (17.5, '17.5% markup'),
         (20, '20% markup'),
+        (22.5, '22.5% markup'),
         (25, '25% markup'),
+        (27.5, '27.5% markup'),
         (30, '30% markup'),
+        (32.5, '32.5% markup'),
         (35, '35% markup'),
+        (37.5, '37.5% markup'),
         (40, '40% markup'),
+        (42.5, '42.5% markup'),
         (45, '45% markup'),
+        (47.5, '47.5% markup'),
         (50, '50% markup'),
-        (55, '55% markup'),
+        (57.5, '57.5% markup'),
         (60, '60% markup'),
+        (62.5, '62.5% markup'),
         (65, '65% markup'),
+        (67.5, '67.5% markup'),
         (70, '70% markup'),
+        (72., '72.% markup'),
         (75, '75% markup'),
+        (77.5, '77.5% markup'),
         (80, '80% markup'),
+        (82.5, '82.% markup'),
         (85, '85% markup'),
+        (87.5, '87.5% markup'),
         (90, '90% markup'),
+        (92., '92.% markup'),
         (95, '95% markup'),
+        (97.5, '97.5% markup'),
         (100, '100% markup'),
     ]
 
@@ -280,7 +316,7 @@ class Sales(models.Model):
     date = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.user} - {self.customer.name if self.customer else "Anonymous"} - {self.total_amount}'
+        return f'{self.user} - {self.customer.name if self.customer else "WALK-IN CUSTOMER"} - {self.total_amount}'
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -313,9 +349,14 @@ class Receipt(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     receipt_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     printed = models.BooleanField(default=False)
+    payment_method = models.CharField(max_length=20, choices=[
+        ('Cash', 'Cash'),
+        ('Wallet', 'Wallet'),
+        ('Transfer', 'Transfer'),
+    ], default='Cash')
 
     def __str__(self):
-        name = self.customer.name if self.customer else (self.wholesale_customer.name if self.wholesale_customer else "Anonymous")
+        name = self.customer.name if self.customer else (self.wholesale_customer.name if self.wholesale_customer else "WALK-IN CUSTOMER")
         return f"Receipt {self.receipt_id} - {name} - {self.total_amount} on {self.date}"
     
 
