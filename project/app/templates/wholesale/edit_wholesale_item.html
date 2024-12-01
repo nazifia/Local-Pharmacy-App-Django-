@@ -85,7 +85,20 @@
             </div>
             <div class="form-group">
                 <label for="name">Item Unit:</label>
-                <input type="text" name="unit" class="form-control mb-3" value="{{ item.unit }}">
+                <!-- Unit Selection Dropdown -->
+                <select name="unit" class="form-control mt-3" required>
+                    <option value="Unit">Select Unit</option>
+                    <option value="PCS">Pieces</option>
+                    <option value="TAB">Tablets</option>
+                    <option value="CAP">Capsules</option>
+                    <option value="TIN">Tins</option>
+                    <option value="BTL">Bottles</option>
+                    <option value="PCK">Packets</option>
+                    <option value="ROLL">Rolls</option>
+                    <option value="CTN">Cartons</option>
+                    <option value="VAIL">Vail</option>
+                    <option value="AMP">Ample</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="cost">Cost Price:</label>

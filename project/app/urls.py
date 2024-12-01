@@ -45,4 +45,5 @@ urlpatterns = [
     # path('activity_logs/', views.activity_logs, name='activities'),
     path('receipts/', views.receipt_list, name='receipt_list'),
     path('receipts/<uuid:receipt_id>/', views.receipt_detail, name='receipt_detail'),
+    
 ]

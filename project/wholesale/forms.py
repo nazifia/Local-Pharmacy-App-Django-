@@ -13,7 +13,7 @@ class addWholesaleForm(forms.ModelForm):
     
     class Meta:
         model = Wholesale
-        fields = ('name', 'cost', 'markup_percentage', 'price', 'stock_quantity', 'exp_date')
+        fields = ('name', 'unit', 'cost', 'markup_percentage', 'price', 'stock_quantity', 'exp_date')
         
 
 

@@ -226,6 +226,32 @@ def delete_wholesale_item(request, pk):
         return redirect('wholesales')
     else:
         return redirect('index')
+
+
+
+
+
+@login_required
+def wholesale_exp_alert(request):
+    alert_threshold = timezone.now() + timedelta(days=90)
+    
+    expiring_items = Wholesale.objects.filter(exp_date__lte=alert_threshold, exp_date__gt=timezone.now())
+    
+    expired_items = Wholesale.objects.filter(exp_date__lt=timezone.now())
+    
+    for expired_item in expired_items:
+        
+        if expired_item.stock_quantity > 0:
+            
+            expired_item.stock_quantity = 0
+            expired_item.save()
+            
+    return render(request, 'partials/exp_date_alert.html', {
+        'expired_items': expired_items,
+        'expiring_items': expiring_items,
+    })
+
+
     
 
 @login_required
