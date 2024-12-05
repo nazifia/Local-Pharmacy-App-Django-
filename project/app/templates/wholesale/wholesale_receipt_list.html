@@ -70,6 +70,56 @@
         text-decoration: underline;
         color: #2c3e50;
     }
+
+    @media (max-width: 768px) {
+        h2 {
+            font-size: 20px;
+        }
+
+
+        table td {
+            font-size: 11px;
+            padding: 3px;
+        }
+
+        table {
+            font-size: 6px;
+            width: auto;
+        }
+
+        .col-md-10 {
+            padding: 13px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        h2 {
+            font-size: 20px;
+        }
+
+        table {
+            font-size: 10px;
+        }
+
+        table th,
+        table td {
+            font-size: 9px;
+            padding: 4px;
+        }
+
+        .col-md-10 {
+            padding: 7px;
+        }
+
+        .receipt-container {
+            margin: 20px 10px;
+            padding: 15px;
+        }
+
+        a {
+            font-size: 10px;
+        }
+    }
 </style>
 
 <div class="col-md-10 offset-md-2">
@@ -102,7 +152,6 @@
                 <td>
                     <a href="{% url 'wholesale_receipt_detail' receipt.receipt_id %}">View Details</a>
                 </td>
-
             </tr>
             {% endfor %}
         </tbody>

@@ -153,27 +153,33 @@ def return_wholesale_item(request, pk):
                         user=sales.user, 
                         name=item.name, 
                         status__in=['Dispensed', 'Partially Returned']
-                    ).order_by('created_at')
+                    ).order_by('-created_at')
 
-                    total_returned = return_quantity
+                    remaining_return_quantity = return_quantity
+
                     for log in logs:
-                        if total_returned <= 0:
+                        if remaining_return_quantity <= 0:
                             break
-                        if log.quantity <= total_returned:
-                            total_returned -= log.quantity
-                            log.delete()
-                        else:
-                            log.quantity -= total_returned
-                            log.status = 'Partially Returned' if log.quantity > 0 else 'Returned'
-                            log.save()
-                            total_returned = 0
 
-                    if total_returned > 0:
+                        if log.quantity <= remaining_return_quantity:
+                            # Fully return this log's quantity
+                            remaining_return_quantity -= log.quantity
+                            log.status = 'Returned'
+                            log.save()
+                            # log.delete()  # Completely remove the log if returned in full
+                        else:
+                            # Partially return this log's quantity
+                            log.quantity -= remaining_return_quantity
+                            log.status = 'Partially Returned'
+                            log.save()
+                            remaining_return_quantity = 0
+
+                    # Handle excess return quantities
+                    if remaining_return_quantity > 0:
                         messages.warning(
                             request,
-                            f"Some of the returned quantity could not be processed. Exceeds dispensed records."
+                            f"Some of the returned quantity ({remaining_return_quantity}) could not be processed as it exceeds the dispensed records."
                         )
-                        return redirect('wholesales')
 
 
 
@@ -184,7 +190,7 @@ def return_wholesale_item(request, pk):
                     # Render updated logs for HTMX requests
                     if request.headers.get('HX-Request'):
                         context = {
-                            'logs': DispensingLog.objects.all().order_by('-created_at'),
+                            'logs': DispensingLog.objects.filter(user=sales.user).order_by('-created_at'),
                             'daily_sales': daily_sales,
                             'monthly_sales': monthly_sales
                         }
@@ -359,7 +365,7 @@ def select_wholesale_items(request, pk):
         )
 
         # Fetch or create a Receipt
-        receipt, receipt_created = Receipt.objects.get_or_create(
+        receipt, receipt_created = WholesaleReceipt.objects.get_or_create(
             wholesale_customer=customer,
             sales=sales,
             defaults={
@@ -642,11 +648,11 @@ def wholesale_receipt(request):
 
     try:
         # Ensure a unique Receipt for the Sales instance
-        receipt = Receipt.objects.filter(sales=sales).first()
+        receipt = WholesaleReceipt.objects.filter(sales=sales).first()
         if not receipt:
             # receipt view
             payment_method = request.POST.get('payment_method', 'Cash')  # Default to 'Cash' if not provided
-            receipt = Receipt.objects.create(
+            receipt = WholesaleReceipt.objects.create(
                 sales=sales,
                 receipt_id=uuid.uuid4(),
                 total_amount=final_total,
@@ -716,7 +722,7 @@ def wholesale_receipt(request):
 
 
 def wholesale_receipt_list(request):
-    receipts = Receipt.objects.all().order_by('-date')  # Only wholesale receipts
+    receipts = WholesaleReceipt.objects.all().order_by('-date')  # Only wholesale receipts
     return render(request, 'wholesale/wholesale_receipt_list.html', {'receipts': receipts})
 
 
@@ -724,7 +730,7 @@ def wholesale_receipt_list(request):
 @login_required
 def wholesale_receipt_detail(request, receipt_id):
     # Retrieve the existing receipt
-    receipt = get_object_or_404(Receipt, receipt_id=receipt_id)
+    receipt = get_object_or_404(WholesaleReceipt, receipt_id=receipt_id)
 
     # If the form is submitted, update buyer details
     if request.method == 'POST':

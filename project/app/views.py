@@ -220,7 +220,7 @@ def return_item(request, pk):
                         messages.warning(request, 'Customer wallet not found or not associated.')
 
                     # Update dispensing log
-                    dispensing_log = DispensingLog.objects.filter(user=sales.user, name=item.name).first()
+                    dispensing_log = DispensingLog.objects.filter(user=sales.user, name=item.name).last()
                     if dispensing_log:
                         if dispensing_log.quantity == return_quantity:
                             dispensing_log.quantity = 0

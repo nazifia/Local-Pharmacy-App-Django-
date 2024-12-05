@@ -29,4 +29,5 @@ urlpatterns = [
     path('wholesale_transactions/<int:customer_id>/', views.wholesale_transactions, name='wholesale_transactions'),
     path('select_wholesale_items/<int:pk>/', views.select_wholesale_items, name='select_wholesale_items'),
     path('wholesale_exp_alert/', views.wholesale_exp_alert, name='wholesale_exp_alert'),
+    path('wholesale_receipt_list/', views.wholesale_receipt_list, name='wholesale_receipt_list'),
 ]

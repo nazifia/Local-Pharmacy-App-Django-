@@ -341,7 +341,6 @@ class Sales(models.Model):
 
 class Receipt(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True, blank=True)
-    wholesale_customer = models.ForeignKey(WholesaleCustomer, on_delete=models.CASCADE, null=True, blank=True)
     sales = models.ForeignKey(Sales, on_delete=models.CASCADE, related_name='receipts', null=True, blank=True)
     buyer_name = models.CharField(max_length=255, blank=True, null=True)
     buyer_address = models.CharField(max_length=255, blank=True, null=True)
@@ -356,9 +355,33 @@ class Receipt(models.Model):
     ], default='Cash')
 
     def __str__(self):
-        name = self.customer.name if self.customer else (self.wholesale_customer.name if self.wholesale_customer else "WALK-IN CUSTOMER")
+        name = self.customer.name if self.customer else "WALK-IN CUSTOMER"
         return f"Receipt {self.receipt_id} - {name} - {self.total_amount} on {self.date}"
-    
+
+
+
+
+
+
+
+class WholesaleReceipt(models.Model):
+    wholesale_customer = models.ForeignKey(WholesaleCustomer, on_delete=models.CASCADE, null=True, blank=True)
+    sales = models.ForeignKey(Sales, on_delete=models.CASCADE, related_name='wholesale_receipts', null=True, blank=True)
+    buyer_name = models.CharField(max_length=255, blank=True, null=True)
+    buyer_address = models.CharField(max_length=255, blank=True, null=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.0'))
+    date = models.DateTimeField(auto_now_add=True)
+    receipt_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    printed = models.BooleanField(default=False)
+    payment_method = models.CharField(max_length=20, choices=[
+        ('Cash', 'Cash'),
+        ('Wallet', 'Wallet'),
+        ('Transfer', 'Transfer'),
+    ], default='Cash')
+
+    def __str__(self):
+        name = self.wholesale_customer.name if self.wholesale_customer else "WALK-IN CUSTOMER"
+        return f"WholesaleReceipt {self.receipt_id} - {name} - {self.total_amount} on {self.date}"
 
 
 

@@ -9,79 +9,151 @@
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'htmx/htmx.min.js' %}"></script>
+    <style>
+        .col-md-10 {
+            margin-left: 12em;
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .table-hover th,
+        .table-hover td {
+            text-align: center;
+        }
+
+        /* Media Queries */
+
+        /* For tablets and smaller devices */
+        @media (max-width: 768px) {
+            .col-md-10 {
+                margin-left: 0;
+                margin-top: 20px;
+                padding: 0 15px;
+            }
+
+            table {
+                font-size: 0.9rem;
+                /* Reduce font size for smaller screens */
+            }
+
+            .btn {
+                font-size: 0.8rem;
+                /* Adjust button size */
+                padding: 5px 10px;
+            }
+        }
+
+        /* For mobile devices */
+        @media (max-width: 480px) {
+            .col-md-10 {
+                margin-left: 0;
+                margin-top: 15px;
+                padding: 0 10px;
+            }
+
+            table {
+                font-size: 0.8em;
+                width: 45%;
+                margin-left: 1em;
+            }
+
+            .btn {
+                font-size: 0.7rem;
+                padding: 4px 8px;
+            }
+
+            thead {
+                display: none;
+                /* Hide table header for mobile screens */
+            }
+
+            tbody tr {
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 10px;
+                border-bottom: 1px solid #ddd;
+            }
+
+            tbody td {
+                text-align: left;
+                display: flex;
+                justify-content: space-between;
+                padding: 3px 7px;
+            }
+
+            tbody td::before {
+                content: attr(data-label);
+                font-weight: bold;
+            }
+        }
+    </style>
+
 </head>
 
 <body>
     {% block content %}
-    <style>
-        .container {
-            width: 50em;
-            margin-left: 8em;
-        }
-    </style>
 
-    <div class="container">
-        <h3 style="color: red;">Select for: {{ customer.name }}</h3>
-        <h4>Wallet Balance: ₦ {{ wallet_balance }}</h4>
+    <h3 style="color: red;">Select for: {{ customer.name }}</h3>
+    <h4>Wallet Balance: ₦ {{ wallet_balance }}</h4>
 
-        <!-- Action selection -->
-        <div class="mb-4">
-            <label for="action" class="form-label">Action:</label>
-            <select id="action" class="form-select" name="action" form="item-form"
-                style="background-color: rgb(252, 182, 182);">
-                <option value="purchase" selected>Purchase</option>
-                <option value="return">Return</option>
-            </select>
-        </div>
-
-        <!-- Search field to filter items -->
-        <div class="mb-3">
-            <input type="text" class="form-control" id="item-search" name="query" placeholder="Search for items..."
-                hx-get="{% url 'search_customer_items' customer.id %}" hx-trigger="keyup changed delay:500ms"
-                hx-target="#for-customer" hx-swap="outerHTML" style="background-color: rgb(210, 247, 253);">
-        </div>
-
-        <a class="btn btn-sm btn-secondary" href="{{ request.META.HTTP_REFERER }}">Back</a>
-
-        <form method="post" action="{% url 'select_items' pk=customer.id %}" id="item-form">
-            {% csrf_token %}
-            <div id="item-selection">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Select</th>
-                            <th>Item</th>
-                            <th>Unit</th>
-                            <th>Price</th>
-                            <th>Stock Available</th>
-                            <th>Status</th>
-                            <th>Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody id="for-customer">
-                        {% for item in items %}
-                        <tr>
-                            <td>
-                                <input type="checkbox" name="item_ids" value="{{ item.id }}">
-                            </td>
-                            <td>{{ item.name }}</td>
-                            <td>{{ item.unit }}</td>
-                            <td>{{ item.price }}</td>
-                            <td>{{ item.stock_quantity }}</td>
-                            <td>{{ item.get_status_display }}</td>
-                            <td>
-                                <input type="number" name="quantities" min="1" max="{{ item.stock_quantity }}" value="1"
-                                    class="form-control input-sm" disabled>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-
-                </table>
-            </div>
-            <button type="submit" class="btn btn-success">Submit</button>
-        </form>
+    <!-- Action selection (purchase or return) -->
+    <div class="mb-4">
+        <label for="action" class="form-label">Action:</label>
+        <select id="action" class="form-select" name="action" form="item-form"
+            style="background-color: rgb(252, 182, 182);">
+            <option value="purchase" selected>Purchase</option>
+            <option value="return">Return</option>
+        </select>
     </div>
+
+    <!-- Search field to filter items -->
+    <!-- <div class="mb-3">
+        <input type="text" class="form-control" id="item-search" name="query" placeholder="Search for items..."
+            hx-get="" hx-trigger="keyup changed delay:500ms"
+            hx-target="#for-customer" hx-swap="outerHTML" style="background-color: rgb(210, 247, 253);">
+    </div> -->
+
+    <a class="btn btn-sm btn-secondary" href="{{ request.META.HTTP_REFERER }}">Back</a>
+
+    <form method="post" action="{% url 'select_items' pk=customer.id %}" id="item-form">
+        {% csrf_token %}
+        <div id="item-selection">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Item</th>
+                        <th>Unit</th>
+                        <th>Price</th>
+                        <th>Stock Available</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody id="for-customer">
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="item_ids" value="{{ item.id }}">
+                        </td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.unit }}</td>
+                        <td>{{ item.price }}</td>
+                        <td>{{ item.stock_quantity }}</td>
+                        <td>
+                            <input type="number" name="quantities" min="1" max="{{ item.stock_quantity }}" value="1"
+                                class="form-control input-sm" disabled>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button type="submit" class="btn btn-success">Proceed with Action</button>
+    </form>
 
     <script>
         // Enable quantity input only when the item is selected

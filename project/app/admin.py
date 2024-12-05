@@ -57,9 +57,15 @@ class SalesAdmin(admin.ModelAdmin):
     search_fields = ('customer__name',)
 
 class ReceiptAdmin(admin.ModelAdmin):
-    list_display = ('customer', 'wholesale_customer', 'sales', 'total_amount', 'date', 'receipt_id', 'printed')
+    list_display = ('customer', 'sales', 'total_amount', 'date', 'receipt_id', 'printed')
     list_filter = ('printed', 'date')
-    search_fields = ('customer__name', 'wholesale_customer__name', 'receipt_id')
+    search_fields = ('customer__name', 'receipt_id')
+
+
+class WholesaleReceiptAdmin(admin.ModelAdmin):
+    list_display = ( 'wholesale_customer', 'sales', 'total_amount', 'date', 'receipt_id', 'printed')
+    list_filter = ('printed', 'date')
+    search_fields = ( 'wholesale_customer__name', 'receipt_id')
 
 class SalesItemAdmin(admin.ModelAdmin):
     list_display = ('sales', 'item', 'price', 'quantity', 'subtotal')
@@ -89,6 +95,7 @@ admin.site.register(WholesaleCustomerWallet, WholesaleCustomerWalletAdmin)
 admin.site.register(TransactionHistory, TransactionHistoryAdmin)
 admin.site.register(Sales, SalesAdmin)
 admin.site.register(Receipt, ReceiptAdmin)
+admin.site.register(WholesaleReceipt, WholesaleReceiptAdmin)
 admin.site.register(SalesItem, SalesItemAdmin)
 admin.site.register(WholesaleSalesItem, WholesaleSalesItemAdmin)
 admin.site.register(ActivityLog, ActivityLogAdmin)
