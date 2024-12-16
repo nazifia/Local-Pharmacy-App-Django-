@@ -1,6 +1,7 @@
 from django import forms
 from .models import *
 from django.contrib.auth.forms import UserChangeForm
+from django.forms import modelformset_factory
 
 
 
@@ -46,3 +47,43 @@ class ReturnItemForm(forms.ModelForm):
     class Meta:
         model = Item
         fields = ['name', 'price', 'exp_date']  # Fields to display (readonly)
+
+
+
+
+
+
+class SupplierRegistrationForm(forms.ModelForm):
+    class Meta:
+        model = Supplier
+        fields = ['name', 'phone', 'contact_info']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_info': forms.TextInput(attrs={'class': 'form-control'}),            
+        }
+
+
+
+
+
+class ProcurementForm(forms.ModelForm):
+    class Meta:
+        model = Procurement
+        fields = ['supplier', 'date']
+
+
+class ProcurementItemForm(forms.ModelForm):
+    class Meta:
+        model = ProcurementItem
+        fields = ['item_name', 'unit', 'quantity', 'cost_price']
+
+    def clean_cost_price(self):
+        cost_price = self.cleaned_data.get('cost_price')
+        if cost_price is None or cost_price <= 0:
+            raise forms.ValidationError("Cost price must be a positive number.")
+        return cost_price
+
+
+
+ProcurementItemFormSet = modelformset_factory(ProcurementItem, form=ProcurementItemForm, extra=10)

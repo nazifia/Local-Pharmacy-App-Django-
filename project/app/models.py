@@ -1,4 +1,6 @@
-
+from django.utils import timezone
+from django.utils.timezone import now
+import datetime
 import uuid
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -73,7 +75,7 @@ class Item(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.IntegerField()
     exp_date = models.DateField()
-    markup_percentage = models.IntegerField(choices=MARKUP_CHOICES, default=0)
+    markup_percentage = models.DecimalField(max_digits=5, choices=MARKUP_CHOICES, decimal_places=2, default=0)
 
     def __str__(self):
         return f'{self.name} {self.markup_percentage} {self.price} {self.stock_quantity} {self.exp_date}'
@@ -134,6 +136,7 @@ class Wholesale(models.Model):
         ('unit', 'Select Unit'),
         ('PCS', 'Pieces'),
         ('TAB', 'Tablets'),
+        ('CARD', 'Cards'),
         ('TIN', 'Tins'),
         ('BTL', 'Bottles'),
         ('PCK', 'Packets'),
@@ -150,7 +153,7 @@ class Wholesale(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.IntegerField()
     exp_date = models.DateField()
-    markup_percentage = models.IntegerField(choices=MARKUP_CHOICES, default=0)
+    markup_percentage = models.DecimalField(max_digits=5, choices=MARKUP_CHOICES, decimal_places=2, default=0)
 
     def __str__(self):
         return f'{self.name} {self.unit} {self.markup_percentage} {self.price} {self.stock_quantity} {self.exp_date}'
@@ -181,6 +184,7 @@ class DispensingLog(models.Model):
     UNIT_CHOICES = [
         ('PCS', 'Pieces'),
         ('TAB', 'Tablets'),
+        ('CARD', 'Cards'),
         ('TIN', 'Tins'),
         ('BTL', 'Bottles'),
         ('PCK', 'Packets'),
@@ -203,7 +207,7 @@ class DispensingLog(models.Model):
     quantity = models.PositiveIntegerField(default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Dispensed')
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=datetime.datetime.now)
 
     def __str__(self):
         return f'{self.user.username} - {self.name} ({self.quantity} {self.unit} {self.status})'
@@ -296,7 +300,7 @@ class TransactionHistory(models.Model):
     wholesale_customer = models.ForeignKey(WholesaleCustomer, on_delete=models.CASCADE, related_name='wholesale_transactions', null=True, blank=True)
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=datetime.datetime.now)
     description = models.TextField(null=True, blank=True)  # Optional field to describe the transaction
 
     def __str__(self):
@@ -313,7 +317,7 @@ class Sales(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     wholesale_customer = models.ForeignKey(WholesaleCustomer, on_delete=models.CASCADE, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=datetime.datetime.now)
 
     def __str__(self):
         return f'{self.user} - {self.customer.name if self.customer else "WALK-IN CUSTOMER"} - {self.total_amount}'
@@ -345,7 +349,7 @@ class Receipt(models.Model):
     buyer_name = models.CharField(max_length=255, blank=True, null=True)
     buyer_address = models.CharField(max_length=255, blank=True, null=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.0'))
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=datetime.datetime.now)
     receipt_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     printed = models.BooleanField(default=False)
     payment_method = models.CharField(max_length=20, choices=[
@@ -370,7 +374,7 @@ class WholesaleReceipt(models.Model):
     buyer_name = models.CharField(max_length=255, blank=True, null=True)
     buyer_address = models.CharField(max_length=255, blank=True, null=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.0'))
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=datetime.datetime.now)
     receipt_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     printed = models.BooleanField(default=False)
     payment_method = models.CharField(max_length=20, choices=[
@@ -430,7 +434,63 @@ def create_wallet(sender, instance, created, **kwargs):
 class ActivityLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     action = models.CharField(max_length=255)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(default=datetime.datetime.now)
 
     def __str__(self):
         return f"{self.user.username} - {self.action} - {self.timestamp}"
+
+
+
+class Supplier(models.Model):
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    contact_info = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+
+
+
+class Procurement(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    def __str__(self):
+        return f'Procurement {self.supplier.name}'
+
+class ProcurementItem(models.Model):
+    UNIT_CHOICES = [
+        ('PCS', 'Pieces'),
+        ('TAB', 'Tablets'),
+        ('CARD', 'Cards'),
+        ('TIN', 'Tins'),
+        ('BTL', 'Bottles'),
+        ('PCK', 'Packets'),
+        ('ROLL', 'Rolls'),
+        ('CTN', 'Cartons'),
+        ('AMP', 'Ampules'),
+        ('VAIL', 'Vial'),
+    ]
+    
+    procurement = models.ForeignKey(Procurement, related_name='items', on_delete=models.CASCADE)
+    item_name = models.CharField(max_length=255)
+    unit = models.CharField(max_length=100, choices=UNIT_CHOICES)
+    quantity = models.PositiveIntegerField(default=0)
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)    
+
+    def save(self, *args, **kwargs):
+        # Ensure cost_price is not None and quantity is valid before calculating subtotal
+        if self.cost_price is not None and self.quantity is not None:
+            self.subtotal = self.cost_price * self.quantity
+        # else:
+        #     self.subtotal = 0  # Set to zero if cost_price or quantity is invalid or None
+        
+        super().save(*args, **kwargs)  # Call the parent class save method
+    
+    def __str__(self):
+        return f'{self.item_name} - {self.procurement.id}'  # Referencing the procurement ID here

@@ -43,6 +43,28 @@
             height: 400px;
         }
 
+
+        .options {
+            display: none;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            background: none;
+            border: none;
+            position: absolute;
+        }
+
+
+
+        .options li a {
+            text-decoration: none;
+            color: grey;
+        }
+
+        .options li:hover {
+            background: #e1ebf6;
+        }
+
         /* Media query for tablets */
         @media (max-width: 768px) {
             .container {
@@ -110,8 +132,24 @@
             <li><a href="{% url 'monthly_sales' %}">Monthly Sales</a></li>
             <li><a href="{% url 'receipt_list' %}" hx-get="{% url 'receipt_list' %}" hx-target="#sales-data">Retail
                     Receipts</a></li>
-            <!-- <li><a href="#" hx-get="#" class="disabled" hx-target="">Users
-                    Activities</a></li> -->
+            <li>
+                <a href="#" id="toggleMenu">Procurement</a>
+                <ul class="options" id="menuOptions">
+                    <li><a href="{% url 'register_supplier_view' %}" hx-get="{% url 'register_supplier_view' %}"
+                            hx-target="#sales-data">Register
+                            Supplier</a></li>
+                    <li><a href="{% url 'list_suppliers' %}" hx-get="{% url 'list_suppliers' %}"
+                            hx-target="#sales-data">View
+                            Suppliers</a></li>
+                    <li><a href="{% url 'create_procurement' %}" hx-get="{% url 'create_procurement' %}"
+                            hx-target="#sales-data">New Procurement</a></li>
+
+                    <li><a href="{% url 'procurement_list' %}" hx-get="{% url 'procurement_list' %}"
+                            hx-target="#sales-data">Procurement
+                            List</a>
+                    </li>
+                </ul>
+            </li>
         </ul>
     </div>
     <div class="container">
@@ -120,6 +158,18 @@
             <h3 style="text-align: center;">Click on the link to see the report</h3>
         </div>
     </div>
+
+
+
+
+    <!-- JavaScript -->
+    <script>
+        document.getElementById("toggleMenu").addEventListener("click", function (e) {
+            e.preventDefault();
+            const options = document.getElementById("menuOptions");
+            options.style.display = options.style.display === "block" ? "none" : "block";
+        });
+    </script>
     {% endblock %}
 </body>
 

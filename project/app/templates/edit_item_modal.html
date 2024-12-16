@@ -79,6 +79,7 @@
                 <option value="Unit">Select Unit</option>
                 <option value="PCS">Pieces</option>
                 <option value="TAB">Tablets</option>
+                <option value="CARD">Cards</option>
                 <option value="CAP">Capsules</option>
                 <option value="TIN">Tins</option>
                 <option value="BTL">Bottles</option>
@@ -91,8 +92,8 @@
         </div>
         <div class="form-group">
             <label for="cost">Cost Price:</label>
-            <input type="number" name="cost" id="cost" class="form-control mb-3" value="{{ item.cost }}"
-                oninput="calculatePrice()">
+            <input type="number" name="cost" id="cost" step="0.01" class="form-control mb-3"
+                value="{{ item.cost|floatformat:2 }}" oninput="calculatePrice()">
         </div>
         <div class="form-group">
             <!-- Markup Percentage Dropdown -->
@@ -145,7 +146,8 @@
 
         <div class="form-group">
             <label for="price">Selling Price:</label>
-            <input type="number" name="price" class="form-control mb-3" value="{{ item.price }}">
+            <input type="number" step="0.01" name="price" class="form-control mb-3"
+                value="{{ item.price|floatformat:2 }}">
         </div>
         <div class="form-group">
             <label for="stock_quantity">Stock Qty:</label>

@@ -55,7 +55,6 @@
             .col-md-8 {
                 width: 100%;
                 margin-left: 0;
-
             }
 
             .side-nav {
@@ -155,7 +154,7 @@
                                 onclick="return confirm('Are you sure you want to delete {{item.name|title}} from  Store?')"
                                 class="btn btn-sm btn-danger">x</a>
                         </td>
-                        <td>{{item.name}}</td>
+                        <td>{{item.name|title}}</td>
                         <td>{{item.unit}}</td>
                         {% if user.is_superuser %}
                         <td>{{item.cost}}</td>
@@ -187,6 +186,7 @@
                                 <option value="PCS">Pieces</option>
                                 <option value="TAB">Tablets</option>
                                 <option value="CAP">Capsules</option>
+                                <option value="CARD">Cards</option>
                                 <option value="TIN">Tins</option>
                                 <option value="BTL">Bottles</option>
                                 <option value="PCK">Packets</option>
@@ -196,7 +196,7 @@
                                 <option value="AMP">Ample</option>
                             </select>
 
-                            <input type="number" name="cost" id="cost" placeholder="COST PRICE"
+                            <input type="number" name="cost" id="cost" step="0.01" placeholder="COST PRICE"
                                 class="form-control mt-3" oninput="calculatePrice()" required>
 
                             <!-- Markup Percentage Dropdown -->
@@ -246,7 +246,7 @@
                             </select>
 
                             <!-- Automatically calculated price -->
-                            <input type="number" name="price" id="price" placeholder="ITEM PRICE"
+                            <input type="number" name="price" step="0.01" id="price" placeholder="ITEM PRICE"
                                 class="form-control mt-3" readonly>
                             <input type="number" name="stock_quantity" placeholder="STOCK QUANTITY"
                                 class="form-control mt-3" required>

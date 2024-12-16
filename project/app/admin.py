@@ -61,7 +61,6 @@ class ReceiptAdmin(admin.ModelAdmin):
     list_filter = ('printed', 'date')
     search_fields = ('customer__name', 'receipt_id')
 
-
 class WholesaleReceiptAdmin(admin.ModelAdmin):
     list_display = ( 'wholesale_customer', 'sales', 'total_amount', 'date', 'receipt_id', 'printed')
     list_filter = ('printed', 'date')
@@ -82,11 +81,26 @@ class ActivityLogAdmin(admin.ModelAdmin):
     list_filter = ('timestamp',)
     search_fields = ('user__username', 'action')
 
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('name', 'phone', 'contact_info')
+    search_fields = ('name', 'phone')
+
+class ProcurementItemAdmin(admin.ModelAdmin):
+    list_display = ('item_name', 'unit', 'quantity')
+    search_fields = ('item_name', 'supplier__name')
+    list_filter = ('item_name', 'unit', 'quantity', 'cost_price', 'subtotal')
+
+
+class ProcurementAdmin(admin.ModelAdmin):
+    list_display = ('supplier', 'date', 'total')
+    search_fields = ('supplier__name', 'date')
+    list_filter = ('supplier__name', 'date')
+
+
+
 # Register models with custom admin configurations
 admin.site.register(Item, ItemAdmin)
 admin.site.register(Wholesale, WholesaleAdmin)
-# admin.site.register(CartItem, CartItemAdmin)
-# admin.site.register(WholesaleCartItem, WholesaleCartItemAdmin)
 admin.site.register(DispensingLog, DispensingLogAdmin)
 admin.site.register(Customer, CustomerAdmin)
 admin.site.register(WholesaleCustomer, WholesaleCustomerAdmin)
@@ -99,3 +113,6 @@ admin.site.register(WholesaleReceipt, WholesaleReceiptAdmin)
 admin.site.register(SalesItem, SalesItemAdmin)
 admin.site.register(WholesaleSalesItem, WholesaleSalesItemAdmin)
 admin.site.register(ActivityLog, ActivityLogAdmin)
+admin.site.register(Supplier, SupplierAdmin)
+admin.site.register(ProcurementItem, ProcurementItemAdmin)
+admin.site.register(Procurement, ProcurementAdmin)

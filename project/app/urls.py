@@ -13,8 +13,10 @@ urlpatterns = [
     path('delete_item/<int:pk>/', views.delete_item, name='delete_item'),
     path('dispense/', views.dispense, name='dispense'),
     path('cart/', views.cart, name='cart'),
+    # path('procurement_cart/', views.procurement_cart, name='procurement_cart'),
     path('return_item/<int:pk>/', views.return_item, name='return_item'),
     path('add_to_cart/<int:pk>/', views.add_to_cart, name='add_to_cart'),
+    # path('add_to_procurement_cart/', views.add_to_procurement_cart, name='add_to_procurement_cart'),
     path('view_cart/', views.view_cart, name='view_cart'),
     path('clear_cart/', views.clear_cart, name='clear_cart'),
     path('receipt/', views.receipt, name='receipt'),
@@ -45,5 +47,10 @@ urlpatterns = [
     # path('activity_logs/', views.activity_logs, name='activities'),
     path('receipts/', views.receipt_list, name='receipt_list'),
     path('receipts/<uuid:receipt_id>/', views.receipt_detail, name='receipt_detail'),
+    path('procurement_list/', views.procurement_list, name='procurement_list'),
+    path('procurement_detail/<int:procurement_id>/', views.procurement_detail, name='procurement_detail'),
+    path('register_supplier_view/', views.register_supplier_view, name='register_supplier_view'),
+    path('create_procurement/', views.create_procurement, name='create_procurement'),
+    path('suppliers/', views.list_suppliers_view, name='list_suppliers'),
     
 ]

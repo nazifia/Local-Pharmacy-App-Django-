@@ -12,6 +12,7 @@ from django.db.models import Sum, ExpressionWrapper, fields, F
 from django.db.models import DecimalField
 from django.utils.dateparse import parse_date
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
@@ -1176,7 +1177,121 @@ def receipt_id(request):
     return render(request, 'partials/receipt_id.html')
 
 
-# @user_passes_test(is_admin)
-# def activity_logs(request):
-#     logs = ActivityLog.objects.all().order_by('-timestamp')
-#     return render(request, 'partials/activities.html', {'logs': logs})
+
+
+def register_supplier_view(request):
+    if request.method == 'POST':
+        form = SupplierRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('list_suppliers')
+    else:
+        form = SupplierRegistrationForm()
+    return render(request, 'partials/supplier_reg_form.html', {'form': form})
+
+
+def list_suppliers_view(request):
+    suppliers = Supplier.objects.all()  # Get all suppliers
+    return render(request, 'partials/supplier_list.html', {'suppliers': suppliers})
+
+
+
+# from django.forms import modelformset_factory
+# ProcurementFormSet = modelformset_factory(ProcuredItem, fields=['item_name', 'unit', 'quantity', 'unit_cost'], extra=1)
+
+
+# def create_procurement_view(request):
+#     if request.method == 'POST':
+#         procurement_form = ProcurementForm(request.POST)
+#         item_formset = ProcuredItemFormSet(request.POST)
+
+#         if procurement_form.is_valid() and item_formset.is_valid():
+#             procurement = procurement_form.save(commit=False)
+#             procurement.total = 0  # Initialize total
+#             procurement.save()
+
+#             for item_form in item_formset:
+#                 procured_item = item_form.save(commit=False)
+#                 procured_item.procurement = procurement
+#                 procured_item.save()
+#                 procurement.total += procured_item.subtotal
+
+#             procurement.save()
+#             messages.success(request, "Procurement recorded successfully.")
+#             return redirect('procurement_list')
+#         else:
+#             messages.error(request, "Failed to record procurement. Check form errors.")
+
+#     else:
+#         procurement_form = ProcurementForm()
+#         item_formset = ProcuredItemFormSet()
+
+#     return render(request, 'partials/procurement_form.html', {
+#         'procurement_form': procurement_form,
+#         'item_formset': item_formset,
+#     })
+
+
+
+
+
+
+
+
+
+
+@login_required
+def create_procurement(request):
+    if request.method == 'POST':
+        receipt_form = ProcurementForm(request.POST)
+        items_formset = ProcurementItemFormSet(request.POST, queryset=ProcurementItem.objects.none())
+
+        if receipt_form.is_valid() and items_formset.is_valid():
+            with transaction.atomic():
+                procurement = receipt_form.save(commit=False)
+                procurement.created_by = request.user
+                procurement.save()  # Save first to get procurement ID
+
+                total = 0
+                for item_form in items_formset:
+                    item = item_form.save(commit=False)
+                    item.procurement = procurement
+                    # Check if cost_price is None or invalid before saving
+                    if item.cost_price is None:
+                        item.cost_price = 0  # Or raise a validation error as per your needs
+                    item.subtotal = item.cost_price * item.quantity
+                    item.save()
+                    total += item.subtotal
+
+                procurement.total = total
+                procurement.save()
+
+            return redirect('procurement_detail', procurement_id=procurement.id)
+
+    else:
+        receipt_form = ProcurementForm()
+        items_formset = ProcurementItemFormSet(queryset=ProcurementItem.objects.none())
+
+    return render(request, 'partials/create_procurement.html', {
+        'receipt_form': receipt_form,
+        'items_formset': items_formset
+    })
+
+
+
+def procurement_list(request):
+    procurements = Procurement.objects.all()
+    return render(request, 'partials/procurement_list.html', {
+        'procurements': procurements,
+    })
+
+
+@login_required
+def procurement_detail(request, procurement_id):
+    procurement = get_object_or_404(Procurement, id=procurement_id)
+    return render(request, 'partials/procurement_detail.html', {'procurement': procurement})
+
+
+
+
+
