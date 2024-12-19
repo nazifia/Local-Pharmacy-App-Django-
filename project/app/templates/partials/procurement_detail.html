@@ -92,6 +92,7 @@
             <tr>
                 <th scope="col">SN</th>
                 <th scope="col">Item Name</th>
+                <th scope="col">Brand</th>
                 <th scope="col">Unit</th>
                 <th scope="col">Quantity</th>
                 <th scope="col">Rate</th>
@@ -103,6 +104,7 @@
             <tr>
                 <td>{{ forloop.counter }}</td>
                 <td>{{ item.item_name|upper }}</td>
+                <td>{{ item.brand|upper }}</td>
                 <td>{{ item.unit }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>₦{{ item.cost_price }}</td>

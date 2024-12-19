@@ -9,7 +9,7 @@ from datetime import timedelta
 from .models import *
 from .forms import *
 from django.db.models import Sum, ExpressionWrapper, fields, F
-from django.db.models import DecimalField
+from django.db.models import DecimalField, Q
 from django.utils.dateparse import parse_date
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
@@ -294,7 +294,7 @@ def dispense(request):
         form = dispenseForm(request.POST)
         if form.is_valid():
             q = form.cleaned_data['q']
-            results = Item.objects.filter(name__icontains=q)
+            results = Item.objects.filter(Q(name__icontains=q) | Q(brand__icontains=q))
     else:
         form = dispenseForm()
         results = None
@@ -1196,46 +1196,6 @@ def list_suppliers_view(request):
 
 
 
-# from django.forms import modelformset_factory
-# ProcurementFormSet = modelformset_factory(ProcuredItem, fields=['item_name', 'unit', 'quantity', 'unit_cost'], extra=1)
-
-
-# def create_procurement_view(request):
-#     if request.method == 'POST':
-#         procurement_form = ProcurementForm(request.POST)
-#         item_formset = ProcuredItemFormSet(request.POST)
-
-#         if procurement_form.is_valid() and item_formset.is_valid():
-#             procurement = procurement_form.save(commit=False)
-#             procurement.total = 0  # Initialize total
-#             procurement.save()
-
-#             for item_form in item_formset:
-#                 procured_item = item_form.save(commit=False)
-#                 procured_item.procurement = procurement
-#                 procured_item.save()
-#                 procurement.total += procured_item.subtotal
-
-#             procurement.save()
-#             messages.success(request, "Procurement recorded successfully.")
-#             return redirect('procurement_list')
-#         else:
-#             messages.error(request, "Failed to record procurement. Check form errors.")
-
-#     else:
-#         procurement_form = ProcurementForm()
-#         item_formset = ProcuredItemFormSet()
-
-#     return render(request, 'partials/procurement_form.html', {
-#         'procurement_form': procurement_form,
-#         'item_formset': item_formset,
-#     })
-
-
-
-
-
-
 
 
 
@@ -1280,7 +1240,7 @@ def create_procurement(request):
 
 
 def procurement_list(request):
-    procurements = Procurement.objects.all()
+    procurements = Procurement.objects.all().order_by('-date')
     return render(request, 'partials/procurement_list.html', {
         'procurements': procurements,
     })

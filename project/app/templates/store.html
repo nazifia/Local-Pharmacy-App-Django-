@@ -129,7 +129,8 @@
                 <thead class="table-primary">
                     <tr>
                         <th scope="col">ACTION</th>
-                        <th scope="col">DESCRIPTION</th>
+                        <th scope="col">GENERIC</th>
+                        <th scope="col">BRAND</th>
                         <th scope="col">UNIT</th>
                         {% if user.is_superuser %}
                         <th scope="col">COST</th>
@@ -155,6 +156,7 @@
                                 class="btn btn-sm btn-danger">x</a>
                         </td>
                         <td>{{item.name|title}}</td>
+                        <td>{{item.brand|title}}</td>
                         <td>{{item.unit}}</td>
                         {% if user.is_superuser %}
                         <td>{{item.cost}}</td>
@@ -180,6 +182,7 @@
                         <form action="{% url 'add_item' %}" method="post">
                             {% csrf_token %}
                             <input type="text" name="name" placeholder="ITEM NAME" class="form-control mt-3" required>
+                            <input type="text" name="brand" placeholder="BRAND NAME" class="form-control mt-3" required>
                             <!-- Unit Selection Dropdown -->
                             <select name="unit" class="form-control mt-3" required>
                                 <option value="Unit">Select Unit</option>

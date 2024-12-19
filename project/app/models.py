@@ -70,6 +70,7 @@ class Item(models.Model):
     ]
 
     name = models.CharField(max_length=100)
+    brand = models.CharField(max_length=100, null=True, blank=True, default='None')
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='unit')
     cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -148,6 +149,7 @@ class Wholesale(models.Model):
     ]
 
     name = models.CharField(max_length=100)
+    brand = models.CharField(max_length=100, null=True, blank=True, default='None')
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='unit')
     cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -167,6 +169,7 @@ class Wholesale(models.Model):
 
 class CartItem(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    brand = models.CharField(max_length=255, blank=True, null=True)
     unit = models.CharField(max_length=10, choices=Wholesale.UNIT_CHOICES, default='unit')
     quantity = models.IntegerField()
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -175,6 +178,7 @@ class CartItem(models.Model):
 
 class WholesaleCartItem(models.Model):
     item = models.ForeignKey(Wholesale, on_delete=models.CASCADE)
+    brand = models.CharField(max_length=255, blank=True, null=True)
     unit = models.CharField(max_length=10, choices=Wholesale.UNIT_CHOICES, default='unit')
     quantity = models.IntegerField()
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -203,6 +207,7 @@ class DispensingLog(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
+    brand = models.CharField(max_length=100, blank=True, null=True, default='None')
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='UNDEFINED')
     quantity = models.PositiveIntegerField(default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -210,7 +215,7 @@ class DispensingLog(models.Model):
     created_at = models.DateTimeField(default=datetime.datetime.now)
 
     def __str__(self):
-        return f'{self.user.username} - {self.name} ({self.quantity} {self.unit} {self.status})'
+        return f'{self.user.username} - {self.name} {self.brand} ({self.quantity} {self.unit} {self.status})'
 
 
 class Customer(models.Model):
@@ -396,6 +401,7 @@ class SalesItem(models.Model):
     sales = models.ForeignKey(Sales, on_delete=models.CASCADE, related_name='sales_items')
     unit = models.CharField(max_length=10, choices=Wholesale.UNIT_CHOICES, default='unit')
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    brand = models.CharField(max_length=225, null=True, blank=True, default='None')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.IntegerField()
 
@@ -411,6 +417,7 @@ class SalesItem(models.Model):
 class WholesaleSalesItem(models.Model):
     sales = models.ForeignKey(Sales, on_delete=models.CASCADE, related_name='wholesale_sales_items')
     item = models.ForeignKey(Wholesale, on_delete=models.CASCADE)
+    brand = models.CharField(max_length=225, null=True, blank=True, default='None')
     unit = models.CharField(max_length=10, choices=Wholesale.UNIT_CHOICES, default='unit')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.IntegerField()
@@ -478,6 +485,7 @@ class ProcurementItem(models.Model):
     
     procurement = models.ForeignKey(Procurement, related_name='items', on_delete=models.CASCADE)
     item_name = models.CharField(max_length=255)
+    brand = models.CharField(max_length=225, null=True, blank=True, default='None')
     unit = models.CharField(max_length=100, choices=UNIT_CHOICES)
     quantity = models.PositiveIntegerField(default=0)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)

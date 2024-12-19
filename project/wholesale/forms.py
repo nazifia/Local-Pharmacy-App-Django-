@@ -4,6 +4,7 @@ from app.models import *
 
 class addWholesaleForm(forms.ModelForm):
     name = forms.CharField(max_length=100)
+    brand = forms.CharField(max_length=100)
     cost = forms.DecimalField(max_digits=10, decimal_places=2)
     price = forms.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = forms.IntegerField()
@@ -13,7 +14,7 @@ class addWholesaleForm(forms.ModelForm):
     
     class Meta:
         model = Wholesale
-        fields = ('name', 'unit', 'cost', 'markup_percentage', 'price', 'stock_quantity', 'exp_date')
+        fields = ('name', 'brand', 'unit', 'cost', 'markup_percentage', 'price', 'stock_quantity', 'exp_date')
         
 
 

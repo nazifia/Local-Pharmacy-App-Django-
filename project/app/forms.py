@@ -15,6 +15,7 @@ class EditUserProfileForm(UserChangeForm):
 
 class addItemForm(forms.ModelForm):
     name = forms.CharField(max_length=100)
+    brand = forms.CharField(max_length=100)
     cost = forms.DecimalField(max_digits=10, decimal_places=2)
     price = forms.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = forms.IntegerField()
@@ -23,7 +24,7 @@ class addItemForm(forms.ModelForm):
 
     class Meta:
         model = Item
-        fields = ('name', 'unit', 'markup_percentage', 'cost', 'price', 'stock_quantity', 'exp_date')
+        fields = ('name', 'brand', 'unit', 'markup_percentage', 'cost', 'price', 'stock_quantity', 'exp_date')
         
 
 class dispenseForm(forms.Form):
@@ -46,7 +47,7 @@ class ReturnItemForm(forms.ModelForm):
 
     class Meta:
         model = Item
-        fields = ['name', 'price', 'exp_date']  # Fields to display (readonly)
+        fields = ['name', 'brand', 'price', 'exp_date']  # Fields to display (readonly)
 
 
 
@@ -76,7 +77,7 @@ class ProcurementForm(forms.ModelForm):
 class ProcurementItemForm(forms.ModelForm):
     class Meta:
         model = ProcurementItem
-        fields = ['item_name', 'unit', 'quantity', 'cost_price']
+        fields = ['item_name', 'brand', 'unit', 'quantity', 'cost_price']
 
     def clean_cost_price(self):
         cost_price = self.cleaned_data.get('cost_price')

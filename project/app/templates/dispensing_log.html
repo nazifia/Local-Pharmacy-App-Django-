@@ -83,6 +83,7 @@
             <tr>
                 <th scope="col">User</th>
                 <th scope="col">Item Name</th>
+                <th scope="col">Brand</th>
                 <th scope="col">Unit</th>
                 <th scope="col">Qty</th>
                 <th scope="col">Rate</th>
@@ -94,7 +95,8 @@
             {% for log in logs %}
             <tr>
                 <td>{{ log.user.get_full_name|default:log.user.username }}</td>
-                <td>{{ log.name }}</td>
+                <td>{{ log.name|title }}</td>
+                <td>{{ log.brand|title }}</td>
                 <td>{{ log.unit }}</td>
                 <td>{{ log.quantity }}</td>
                 <td>{{ log.amount }}</td>

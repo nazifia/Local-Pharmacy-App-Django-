@@ -111,7 +111,8 @@
             <thead class="table-primary">
                 <tr>
                     <th scope="col">S/no</th>
-                    <th scope="col">Description</th>
+                    <th scope="col">Generic</th>
+                    <th scope="col">Brand</th>
                     <th scope="col">Unit</th>
                     <th scope="col">Qty</th>
                     <th scope="col">Rate</th>
@@ -125,6 +126,7 @@
                 <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ cart_item.item.name }}</td>
+                    <td>{{ cart_item.item.brand }}</td>
                     <td>{{ cart_item.item.unit }}</td>
                     <td>{{ cart_item.quantity }}</td>
                     <td>{{ cart_item.item.price }}</td>
