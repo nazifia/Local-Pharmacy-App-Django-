@@ -133,6 +133,10 @@
                         <a class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editCustomerModal"
                             hx-get="{% url 'edit_customer' customer.id %}"
                             hx-target="#editCustomerModal .modal-content">Edit</a>
+
+                        <a type="button" class="btn btn-sm btn-warning"
+                            hx-get="{% url 'customer_history' customer.id %}" hx-target="#display"
+                            hx-swap="innerHTML">History</a>
                     </td>
                 </tr>
                 {% endfor %}

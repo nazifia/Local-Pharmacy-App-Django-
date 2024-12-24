@@ -365,6 +365,24 @@ def add_to_cart(request, pk):
 
 
 
+
+@login_required
+def customer_history(request, pk):
+    customer = get_object_or_404(Customer, id=pk)
+    histories = ItemSelectionHistory.objects.filter(customer=customer).select_related('customer__user').order_by('-date')
+    
+    # Add a 'subtotal' field to each history
+    for history in histories:
+        history.subtotal = history.quantity * history.unit_price
+
+    return render(request, 'partials/customer_history.html', {
+        'customer': customer,
+        'histories': histories,
+    })
+
+
+
+
 @transaction.atomic
 @login_required
 def select_items(request, pk):
@@ -427,7 +445,7 @@ def select_items(request, pk):
                     item.stock_quantity -= quantity
                     item.save()
 
-                    # Update or create a WholesaleCartItem
+                    # Update or create a CartItem
                     cart_item, created = CartItem.objects.get_or_create(
                         item=item,
                         defaults={'quantity': quantity, 'discount_amount': discount, 'unit': unit}
@@ -438,7 +456,7 @@ def select_items(request, pk):
                         cart_item.unit = unit
                     cart_item.save()
 
-                    # Calculate subtotal and log dispensing
+                    # Calculate subtotal
                     subtotal = (item.price * quantity) - discount
                     total_cost += subtotal
 
@@ -455,6 +473,16 @@ def select_items(request, pk):
                     # Update the receipt
                     receipt.total_amount += subtotal
                     receipt.save()
+
+                    # **Log Item Selection History (Purchase)**
+                    ItemSelectionHistory.objects.create(
+                        customer=customer,
+                        user=request.user,
+                        item=item,
+                        quantity=quantity,
+                        action=action,
+                        unit_price=item.price,
+                    )
 
                 elif action == 'return':
                     # Handle return logic
@@ -475,19 +503,30 @@ def select_items(request, pk):
                             sales_item.save()
 
                         refund_amount = (item.price * quantity) - discount
-                        
+
                         # Update sales total
-                        sales = sales_item.sales
                         sales.total_amount -= refund_amount
                         sales.save()
 
+                        # Log dispensing action
                         DispensingLog.objects.create(
                             user=request.user,
                             name=item.name,
                             unit=unit,
                             quantity=quantity,
                             amount=refund_amount,
-                            status='Partially Returned' if sales_item.quantity > 0 else 'Returned'  # Status based on remaining quantity
+                            status='Partially Returned' if sales_item.quantity > 0 else 'Returned'
+                        )
+
+                        # **Log Item Selection History (Return)**
+                        ItemSelectionHistory.objects.create(
+                            customer=customer,
+                            user=request.user,
+                            item=item,
+                            quantity=quantity,
+                            action=action,
+                            unit_price=item.price,
+                            subtotal=quantity * item.price,
                         )
 
                         total_cost -= refund_amount
@@ -528,6 +567,7 @@ def select_items(request, pk):
 
 
 
+
 @login_required
 def view_cart(request):
     if request.user.is_authenticated:
@@ -538,7 +578,7 @@ def view_cart(request):
             # Process each discount form submission
             for cart_item in cart_items:
                 # Fetch the discount amount using cart_item.id in the input name
-                discount = int(request.POST.get(f'discount_amount-{cart_item.id}', 0))
+                discount = Decimal(request.POST.get(f'discount_amount-{cart_item.id}', 0))
                 cart_item.discount_amount = max(discount, 0)
                 cart_item.save()
 
@@ -1199,57 +1239,86 @@ def list_suppliers_view(request):
 
 
 
-
+@user_passes_test(is_admin)
 @login_required
-def create_procurement(request):
+def add_procurement(request):
+    ProcurementItemFormSet = modelformset_factory(
+        ProcurementItem,
+        form=ProcurementItemForm,
+        extra=1,  # Allow at least one empty form to be displayed
+        can_delete=True  # Allow deleting items dynamically
+    )
+
     if request.method == 'POST':
-        receipt_form = ProcurementForm(request.POST)
-        items_formset = ProcurementItemFormSet(request.POST, queryset=ProcurementItem.objects.none())
+        procurement_form = ProcurementForm(request.POST)
+        formset = ProcurementItemFormSet(request.POST, queryset=ProcurementItem.objects.none())
 
-        if receipt_form.is_valid() and items_formset.is_valid():
-            with transaction.atomic():
-                procurement = receipt_form.save(commit=False)
-                procurement.created_by = request.user
-                procurement.save()  # Save first to get procurement ID
+        if procurement_form.is_valid() and formset.is_valid():
+            procurement = procurement_form.save(commit=False)
+            procurement.created_by = request.user  # Assuming the user is authenticated
+            procurement.save()
 
-                total = 0
-                for item_form in items_formset:
-                    item = item_form.save(commit=False)
-                    item.procurement = procurement
-                    # Check if cost_price is None or invalid before saving
-                    if item.cost_price is None:
-                        item.cost_price = 0  # Or raise a validation error as per your needs
-                    item.subtotal = item.cost_price * item.quantity
-                    item.save()
-                    total += item.subtotal
+            for form in formset:
+                if form.cleaned_data.get('item_name'):  # Save only valid items
+                    procurement_item = form.save(commit=False)
+                    procurement_item.procurement = procurement
+                    procurement_item.save()
 
-                procurement.total = total
-                procurement.save()
-
-            return redirect('procurement_detail', procurement_id=procurement.id)
-
+            messages.success(request, "Procurement and items added successfully!")
+            return redirect('procurement_list')  # Replace with your actual URL name
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
-        receipt_form = ProcurementForm()
-        items_formset = ProcurementItemFormSet(queryset=ProcurementItem.objects.none())
+        procurement_form = ProcurementForm()
+        formset = ProcurementItemFormSet(queryset=ProcurementItem.objects.none())
 
-    return render(request, 'partials/create_procurement.html', {
-        'receipt_form': receipt_form,
-        'items_formset': items_formset
-    })
+    return render(
+        request,
+        'partials/add_procurement.html',
+        {
+            'procurement_form': procurement_form,
+            'formset': formset,
+        }
+    )
 
+
+
+def procurement_form(request):
+    # Create an empty formset for the items
+    item_formset = ProcurementItemFormSet(queryset=ProcurementItem.objects.none())  # Replace with your model if needed
+
+    # Get the empty form (form for the new item)
+    new_form = item_formset.empty_form
+
+    # Render the HTML for the new form
+    return render(request, 'partials/procurement_form.html', {'form': new_form})
 
 
 def procurement_list(request):
-    procurements = Procurement.objects.all().order_by('-date')
+    procurements = (
+        Procurement.objects.annotate(calculated_total=Sum('items__subtotal'))
+        .order_by('-date')
+    )
     return render(request, 'partials/procurement_list.html', {
         'procurements': procurements,
     })
 
 
 @login_required
+# def procurement_detail(request, procurement_id):
+#     procurement = get_object_or_404(Procurement, id=procurement_id)
+#     return render(request, 'partials/procurement_detail.html', {'procurement': procurement})
 def procurement_detail(request, procurement_id):
     procurement = get_object_or_404(Procurement, id=procurement_id)
-    return render(request, 'partials/procurement_detail.html', {'procurement': procurement})
+
+    # Calculate total from ProcurementItem objects
+    total = procurement.items.aggregate(total=models.Sum('subtotal'))['total'] or 0
+
+    return render(request, 'partials/procurement_detail.html', {
+        'procurement': procurement,
+        'total': total,
+    })
+
 
 
 

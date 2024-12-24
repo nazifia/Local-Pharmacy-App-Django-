@@ -146,7 +146,7 @@
                     OTHERS
                     {% endif %}
                 </td>
-                <td>{{ procurement.total }}</td>
+                <td>{{ procurement.calculated_total|floatformat:2 }}</td>
                 <td>{{ procurement.date }}</td>
                 <td>
 

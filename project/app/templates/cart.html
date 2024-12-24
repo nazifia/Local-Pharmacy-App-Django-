@@ -142,7 +142,7 @@
                     <td>
                         <form action="{% url 'view_cart' %}" method="post">
                             {% csrf_token %}
-                            <input type="number" name="discount_amount-{{ cart_item.id }}"
+                            <input type="number" step="0.01" name="discount_amount-{{ cart_item.id }}"
                                 id="discount_amount-{{cart_item.id}}" min="0" value="discount_amount-{{total_discount}}"
                                 style="width: 70px; border-radius: 3px;">
                             <button class="btn btn-outline-info btn-sm mb-2" type="submit">Discount</button>

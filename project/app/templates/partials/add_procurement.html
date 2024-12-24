@@ -1,0 +1,191 @@
+{% block content %}
+<style>
+    /* General Form Styling */
+    form {
+        margin-left: 8em;
+        margin-top: 1em;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        width: 92%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Input Fields */
+    form input,
+    form select,
+    form button,
+    form textarea {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    /* Labels */
+    form label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+        color: #333;
+    }
+
+    /* Error Messages */
+    form .text-danger {
+        color: #ff0000;
+        font-size: 12px;
+        margin-top: -5px;
+    }
+
+    /* Buttons */
+    form button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 15px;
+    }
+
+    form button:hover {
+        background-color: #0056b3;
+    }
+
+    /* Table Styling */
+    #item-formset {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+
+    #item-formset th,
+    #item-formset td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    #item-formset th {
+        background-color: #f2f2f2;
+        color: #333;
+    }
+
+    #item-formset .form-row td {
+        vertical-align: middle;
+    }
+
+    /* Highlight New Rows */
+    #item-formset .form-row.new-row {
+        background-color: #e7f3ff;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        form {
+            padding: 10px;
+        }
+
+        form input,
+        form select,
+        form button,
+        form textarea {
+            font-size: 12px;
+        }
+    }
+</style>
+
+<form method="post" action="{% url 'add_procurement' %}">
+    {% csrf_token %}
+
+    <!-- Procurement Form -->
+    <div>
+        {% for field in procurement_form %}
+        <div>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+            <small>{{ field.help_text }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+            <p class="text-danger">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ProcurementItem Formset -->
+    <table id="item-formset">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Brand</th>
+                <th>Unit</th>
+                <th>Quantity</th>
+                <th>Cost Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ formset.management_form }}
+            {% for form in formset %}
+            <tr class="form-row">
+                <td>{{ form.item_name }}</td>
+                <td>{{ form.brand }}</td>
+                <td>{{ form.unit }}</td>
+                <td>{{ form.quantity }}</td>
+                <td>{{ form.cost_price }}</td>
+                <td>
+                    {% if form.instance.pk %}
+                    <input type="checkbox" name="{{ form.DELETE.name }}" id="{{ form.DELETE.id }}">
+                    Delete
+                    {% else %}
+                    <button type="button" class="btn btn-danger btn-sm remove-item"
+                        onclick="removeRow(this)">Remove</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary btn-sm" type="button" id="add-item">Add Item</button>
+    <button class="btn btn-success btn-sm" type="submit">Save</button>
+
+</form>
+
+<script>
+    document.getElementById('add-item').addEventListener('click', function () {
+        const table = document.getElementById('item-formset');
+        const totalForms = document.querySelector('input[name="form-TOTAL_FORMS"]');
+        const formIdx = totalForms.value;
+        const newRow = table.querySelector('.form-row').cloneNode(true);
+
+        newRow.querySelectorAll('input, select').forEach(input => {
+            input.name = input.name.replace(`-${formIdx - 1}-`, `-${formIdx}-`);
+            input.id = input.id.replace(`-${formIdx - 1}-`, `-${formIdx}-`);
+            if (input.type !== 'hidden') input.value = ''; // Clear form values
+        });
+
+        // Add an empty "Actions" cell with Remove button
+        const actionsCell = newRow.querySelector('td:last-child');
+        actionsCell.innerHTML = '<button type="button" class="btn btn-danger btn-sm remove-item" onclick="removeRow(this)">Remove</button>';
+
+        totalForms.value = parseInt(formIdx) + 1;
+        table.appendChild(newRow);
+    });
+
+    // Remove the form row
+    function removeRow(button) {
+        const row = button.closest('tr');
+        row.remove();
+        const totalForms = document.querySelector('input[name="form-TOTAL_FORMS"]');
+        totalForms.value = parseInt(totalForms.value) - 1;
+    }
+</script>
+{% endblock %}

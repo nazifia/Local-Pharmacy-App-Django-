@@ -50,7 +50,9 @@ urlpatterns = [
     path('procurement_list/', views.procurement_list, name='procurement_list'),
     path('procurement_detail/<int:procurement_id>/', views.procurement_detail, name='procurement_detail'),
     path('register_supplier_view/', views.register_supplier_view, name='register_supplier_view'),
-    path('create_procurement/', views.create_procurement, name='create_procurement'),
+    path('add_procurement/', views.add_procurement, name='add_procurement'),
     path('suppliers/', views.list_suppliers_view, name='list_suppliers'),
-    
+    path('procurement_form/', views.procurement_form, name='procurement_form'),
+    path('customer_history/<int:pk>/', views.customer_history, name='customer_history'),
+    # path('add_procurement_item/<int:procurement_id>/', views.add_procurement_item, name='add_procurement_item'),
 ]

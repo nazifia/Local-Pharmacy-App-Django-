@@ -331,6 +331,24 @@ def add_to_wholesale_cart(request, item_id):
 
 
 
+@login_required
+def wholesale_customer_history(request, pk):
+    wholesale_customer = get_object_or_404(WholesaleCustomer, id=pk)
+    histories = WholesaleSelectionHistory.objects.filter(wholesale_customer=wholesale_customer).select_related('wholesale_customer__user').order_by('-date')
+    
+    # Add a 'subtotal' field to each history
+    for history in histories:
+        history.subtotal = history.quantity * history.unit_price
+
+    return render(request, 'wholesale/wholesale_customer_history.html', {
+        'wholesale_customer': wholesale_customer,
+        'histories': histories,
+    })
+
+
+
+
+
 @transaction.atomic
 @login_required
 def select_wholesale_items(request, pk):
@@ -429,6 +447,16 @@ def select_wholesale_items(request, pk):
                     # Update the receipt
                     receipt.total_amount += subtotal
                     receipt.save()
+                    
+                    # **Log Item Selection History (Purchase)**
+                    WholesaleSelectionHistory.objects.create(
+                        wholesale_customer=customer,
+                        user=request.user,
+                        item=item,
+                        quantity=quantity,
+                        action=action,
+                        unit_price=item.price,
+                    )
 
                 elif action == 'return':
                     # Handle return logic
@@ -459,6 +487,16 @@ def select_wholesale_items(request, pk):
                             quantity=quantity,
                             amount=refund_amount,
                             status='Partially Returned' if sales_item.quantity > 0 else 'Returned'  # Status based on remaining quantity
+                        )
+                        
+                        # **Log Item Selection History (Return)**
+                        WholesaleSelectionHistory.objects.create(
+                            customer=customer,
+                            user=request.user,
+                            item=item,
+                            quantity=quantity,
+                            action=action,
+                            unit_price=item.price,
                         )
 
                         total_cost -= refund_amount

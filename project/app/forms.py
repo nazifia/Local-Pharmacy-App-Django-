@@ -68,23 +68,40 @@ class SupplierRegistrationForm(forms.ModelForm):
 
 
 
+
 class ProcurementForm(forms.ModelForm):
     class Meta:
         model = Procurement
         fields = ['supplier', 'date']
+        widgets = {
+            'supplier': forms.Select(attrs={'placeholder': 'Select supplier'}),
+            'date': forms.DateInput(attrs={'placeholder': 'Select date', 'type': 'date'}),
+        }
+        labels = {
+            'supplier': 'Supplier',
+            'date': 'Date',
+        }
+
+
 
 
 class ProcurementItemForm(forms.ModelForm):
     class Meta:
         model = ProcurementItem
         fields = ['item_name', 'brand', 'unit', 'quantity', 'cost_price']
+        widgets = {
+            'item_name': forms.TextInput(attrs={'placeholder': 'Enter item name'}),
+            'brand': forms.TextInput(attrs={'placeholder': 'Enter brand name'}),
+            'unit': forms.Select(attrs={'placeholder': 'Select unit'}),
+            'quantity': forms.NumberInput(attrs={'placeholder': 'Enter quantity'}),
+            'cost_price': forms.NumberInput(attrs={'placeholder': 'Enter cost price'}),
+        }
+        labels = {
+            'item_name': 'Item Name',
+            'brand': 'Brand',
+            'unit': 'Unit',
+            'quantity': 'Quantity',
+            'cost_price': 'Cost Price',
+        }
 
-    def clean_cost_price(self):
-        cost_price = self.cleaned_data.get('cost_price')
-        if cost_price is None or cost_price <= 0:
-            raise forms.ValidationError("Cost price must be a positive number.")
-        return cost_price
-
-
-
-ProcurementItemFormSet = modelformset_factory(ProcurementItem, form=ProcurementItemForm, extra=10)
+ProcurementItemFormSet = modelformset_factory(ProcurementItem, form=ProcurementItemForm, extra=0)

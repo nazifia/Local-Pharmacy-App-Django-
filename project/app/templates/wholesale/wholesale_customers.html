@@ -137,6 +137,10 @@
                             data-bs-target="#editWholesaleCustomerModal"
                             hx-get="{% url 'edit_wholesale_customer' customer.id %}"
                             hx-target="#editWholesaleCustomerModal .modal-content">Edit</a>
+
+                        <a type="button" class="btn btn-sm btn-warning"
+                            hx-get="{% url 'wholesale_customer_history' customer.id %}" hx-target="#item-selection"
+                            hx-swap="innerHTML">History</a>
                     </td>
                 </tr>
                 {% endfor %}

@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.utils.timezone import now
 import datetime
 import uuid
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.db import models
@@ -469,6 +469,12 @@ class Procurement(models.Model):
     def __str__(self):
         return f'Procurement {self.supplier.name}'
 
+    def calculate_total(self):
+        """Calculate and update the total cost of the procurement."""
+        self.total = sum(item.subtotal for item in self.items.all())
+        self.save(update_fields=['total'])  # Ensure only 'total' field is updated
+
+
 class ProcurementItem(models.Model):
     UNIT_CHOICES = [
         ('PCS', 'Pieces'),
@@ -482,23 +488,64 @@ class ProcurementItem(models.Model):
         ('AMP', 'Ampules'),
         ('VAIL', 'Vial'),
     ]
-    
+
     procurement = models.ForeignKey(Procurement, related_name='items', on_delete=models.CASCADE)
     item_name = models.CharField(max_length=255)
     brand = models.CharField(max_length=225, null=True, blank=True, default='None')
     unit = models.CharField(max_length=100, choices=UNIT_CHOICES)
     quantity = models.PositiveIntegerField(default=0)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2)    
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, editable=False)  # Subtotal should not be editable.
 
     def save(self, *args, **kwargs):
-        # Ensure cost_price is not None and quantity is valid before calculating subtotal
-        if self.cost_price is not None and self.quantity is not None:
-            self.subtotal = self.cost_price * self.quantity
-        # else:
-        #     self.subtotal = 0  # Set to zero if cost_price or quantity is invalid or None
+        if self.cost_price is None or self.quantity is None:
+            raise ValueError("Both cost_price and quantity must be provided to calculate subtotal.")
         
-        super().save(*args, **kwargs)  # Call the parent class save method
-    
+        # Calculate subtotal
+        self.subtotal = self.cost_price * self.quantity
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f'{self.item_name} - {self.procurement.id}'  # Referencing the procurement ID here
+        return f'{self.item_name} - {self.procurement.id}'
+
+
+# Signals to update total in Procurement after changes in ProcurementItem
+@receiver(post_save, sender=ProcurementItem)
+def update_procurement_total(sender, instance, created, **kwargs):
+    """Recalculate the procurement total after adding or updating an item."""
+    instance.procurement.calculate_total()
+
+@receiver(pre_delete, sender=ProcurementItem)
+def update_procurement_total_on_delete(sender, instance, **kwargs):
+    """Recalculate the procurement total after an item is deleted."""
+    instance.procurement.calculate_total()
+
+
+
+class ItemSelectionHistory(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.PositiveIntegerField()
+    action = models.CharField(max_length=20, choices=[('purchase', 'Purchase'), ('return', 'Return')])
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    date = models.DateTimeField(default=datetime.datetime.now)
+
+    def __str__(self):
+        return f'{self.customer.name} - {self.item.name} ({self.action})'
+
+
+
+
+
+class WholesaleSelectionHistory(models.Model):
+    wholesale_customer = models.ForeignKey(WholesaleCustomer, on_delete=models.CASCADE, null=True, blank=True)
+    item = models.ForeignKey(Wholesale, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.PositiveIntegerField()
+    action = models.CharField(max_length=20, choices=[('purchase', 'Purchase'), ('return', 'Return')])
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    date = models.DateTimeField(default=datetime.datetime.now)
+
+    def __str__(self):
+        return f'{self.wholesale_customer.name} - {self.item.name} ({self.action})'
