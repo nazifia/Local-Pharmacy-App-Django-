@@ -34,11 +34,19 @@
             <input type="text" id="buyer_address" name="buyer_address" value="{{ receipt.buyer_address|upper }}"
                 placeholder="" style="border: none; border-bottom:1px solid grey;">
         </div>
-        <br>
-        <br>
+        <br><br>
+
+        <!-- Payment Status Selection -->
+        <label for="payment_status">Payment Status:</label>
+        <select id="payment_status" name="payment_status" class="form-select form-select-sm"
+            style="display: inline-block; width: auto;">
+            <option value="Paid" {% if receipt.paid %}selected{% endif %}>Paid</option>
+            <option value="Unpaid" {% if not receipt.paid %}selected{% endif %}>Unpaid</option>
+        </select>
+
         <!-- Trigger Button -->
-        <button type="button" class="btn-outline-primary btn-sm" id="paymentMethodButton" class="btn btn-primary"
-            data-bs-toggle="modal" data-bs-target="#paymentMethodModal">
+        <button type="button" class="btn-outline-primary btn-sm" id="paymentMethodButton" data-bs-toggle="modal"
+            data-bs-target="#paymentMethodModal">
             {% if receipt.payment_method %}
             Payment Method: {{ receipt.payment_method }}
             {% else %}
@@ -57,7 +65,7 @@
                 <tr>
                     <th scope="col">SN</th>
                     <th scope="col">Item Name</th>
-                    <th scope="col">Brand</th>
+                    <th scope="col">Brand Name</th>
                     <th scope="col">Unit</th>
                     <th scope="col">Quantity</th>
                     <th scope="col">Rate</th>
@@ -119,25 +127,17 @@
 
     <script>
         function submitFormAndPrint() {
-            // Submit the form programmatically
             document.getElementById('buyer-info-form').submit();
 
-            // Trigger print after a short delay to ensure form submission
             setTimeout(function () {
                 window.print();
-                // Redirect to the view cart page after printing
-                window.location.href = "{% url 'wholesale_cart' %}";
+                window.location.href = "{% url 'view_cart' %}";
             }, 500);
         }
 
         function selectPaymentMethod(method) {
-            // Update the hidden input with the selected payment method
             document.getElementById('paymentMethodInput').value = method;
-
-            // Update the button text with the selected payment method
             document.getElementById('paymentMethodButton').textContent = `Payment Method: ${method}`;
-
-            // Close the modal
             var modal = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
             modal.hide();
         }

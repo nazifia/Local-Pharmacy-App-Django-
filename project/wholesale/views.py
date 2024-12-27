@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_POST
 import uuid
 from app.views import get_daily_sales, get_monthly_sales
+from django.db.models import Sum, Q, F
 
 
 
@@ -765,6 +766,31 @@ def wholesale_receipt_list(request):
 
 
 
+def search_wholesale_receipts(request):
+    from datetime import datetime, timedelta
+
+    # Get the date query from the GET request
+    date_query = request.GET.get('date', '').strip()
+
+
+    receipts = WholesaleReceipt.objects.all()
+    if date_query:
+        try:
+            # Parse date query
+            date_object = datetime.strptime(date_query, '%Y-%m-%d').date()
+            # Adjust filtering for DateTimeField (if necessary)
+            receipts = receipts.filter(date__date=date_object)
+        except ValueError:
+            print("Invalid date format")
+
+    # Order receipts by date
+    receipts = receipts.order_by('-date')
+
+    return render(request, 'wholesale/search_wholesale_receipts.html', {'receipts': receipts})
+
+
+
+
 @login_required
 def wholesale_receipt_detail(request, receipt_id):
     # Retrieve the existing receipt
@@ -810,6 +836,51 @@ def wholesale_receipt_detail(request, receipt_id):
         'total_discount': total_discount,
         'total_discounted_price': total_discounted_price,
     })
+
+
+
+
+def get_wholesale_sales_by_user(date_from=None, date_to=None):
+    # Filter wholesale sales by date range if provided
+    filters = Q()
+    if date_from:
+        filters &= Q(date__gte=date_from)
+    if date_to:
+        filters &= Q(date__lte=date_to)
+
+    # Aggregating wholesale sales for each user
+    wholesale_sales_by_user = (
+        Sales.objects.filter(filters)
+        .filter(wholesale_sales_items__isnull=False)  # Ensure only wholesale sales are considered
+        .values('user__username')  # Group by user
+        .annotate(
+            total_wholesale_sales=Sum('total_amount'),  # Sum of total amounts
+            total_items=Sum(F('wholesale_sales_items__quantity'))  # Sum of all quantities sold
+        )
+        .order_by('-total_wholesale_sales')  # Sort by total sales in descending order
+    )
+    return wholesale_sales_by_user
+
+
+
+@user_passes_test(is_admin)
+def wholesale_sales_by_user(request):
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    # Parse dates if provided
+    date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else None
+    date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else None
+
+    # Fetch wholesale sales data
+    wholesale_user_sales = get_wholesale_sales_by_user(date_from=date_from, date_to=date_to)
+
+    context = {
+        'wholesale_user_sales': wholesale_user_sales,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    return render(request, 'wholesale/wholesales_by_user.html', context)
 
 
 
@@ -958,4 +1029,102 @@ def wholesale_transactions(request, customer_id):
 
 
 
+
+@user_passes_test(is_admin)
+@login_required
+def add_wholesale_procurement(request):
+    ProcurementItemFormSet = modelformset_factory(
+        WholesaleProcurementItem,
+        form=WholesaleProcurementItemForm,
+        extra=1,  # Allow at least one empty form to be displayed
+        can_delete=True  # Allow deleting items dynamically
+    )
+
+    if request.method == 'POST':
+        procurement_form = WholesaleProcurementForm(request.POST)
+        formset = ProcurementItemFormSet(request.POST, queryset=WholesaleProcurementItem.objects.none())
+
+        if procurement_form.is_valid() and formset.is_valid():
+            procurement = procurement_form.save(commit=False)
+            procurement.created_by = request.user  # Assuming the user is authenticated
+            procurement.save()
+
+            for form in formset:
+                if form.cleaned_data.get('item_name'):  # Save only valid items
+                    procurement_item = form.save(commit=False)
+                    procurement_item.procurement = procurement
+                    procurement_item.save()
+
+            messages.success(request, "Procurement and items added successfully!")
+            return redirect('wholesale_procurement_list')  # Replace with your actual URL name
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        procurement_form = WholesaleProcurementForm()
+        formset = ProcurementItemFormSet(queryset=WholesaleProcurementItem.objects.none())
+
+    return render(
+        request,
+        'wholesale/add_wholesale_procurement.html',
+        {
+            'procurement_form': procurement_form,
+            'formset': formset,
+        }
+    )
+
+
+
+def wholesale_procurement_form(request):
+    # Create an empty formset for the items
+    item_formset = ProcurementItemFormSet(queryset=WholesaleProcurementItem.objects.none())  # Replace with your model if needed
+
+    # Get the empty form (form for the new item)
+    new_form = item_formset.empty_form
+
+    # Render the HTML for the new form
+    return render(request, 'wholesale/wholesale_procurement_form.html', {'form': new_form})
+
+
+def wholesale_procurement_list(request):
+    procurements = (
+        WholesaleProcurement.objects.annotate(calculated_total=Sum('items__subtotal'))
+        .order_by('-date')
+    )
+    return render(request, 'wholesale/wholesale_procurement_list.html', {
+        'procurements': procurements,
+    })
+
+
+
+def search_wholesale_procurement(request):
+    # Base query with calculated total and ordering
+    procurements = (
+        WholesaleProcurement.objects.annotate(calculated_total=Sum('items__subtotal'))
+        .order_by('-date')
+    )
+
+    # Get search parameters from the request
+    name_query = request.GET.get('name', '').strip()
+
+    # Apply filters if search parameters are provided
+    if name_query:
+        procurements = procurements.filter(supplier__name__icontains=name_query)
+
+    # Render the filtered results
+    return render(request, 'wholesale/search_wholesale_procurement.html', {
+        'procurements': procurements,
+    })
+    
+
+@login_required
+def wholesale_procurement_detail(request, procurement_id):
+    procurement = get_object_or_404(WholesaleProcurement, id=procurement_id)
+
+    # Calculate total from ProcurementItem objects
+    total = procurement.items.aggregate(total=models.Sum('subtotal'))['total'] or 0
+
+    return render(request, 'wholesale/wholesale_procurement_detail.html', {
+        'procurement': procurement,
+        'total': total,
+    })
 

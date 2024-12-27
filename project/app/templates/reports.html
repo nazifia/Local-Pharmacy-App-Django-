@@ -128,6 +128,10 @@
                 <a href="{% url 'exp_date_alert' %}" hx-get="{% url 'exp_date_alert' %}" hx-target="#sales-data">Expiry
                     Alert</a>
             </li>
+            <li>
+                <a href="{% url 'sales_by_user' %}" hx-get="{% url 'sales_by_user' %}" hx-target="#sales-data">Sales
+                    by Users</a>
+            </li>
             <li><a href="{% url 'daily_sales' %}">Daily Sales</a></li>
             <li><a href="{% url 'monthly_sales' %}">Monthly Sales</a></li>
             <li><a href="{% url 'receipt_list' %}" hx-get="{% url 'receipt_list' %}" hx-target="#sales-data">Retail

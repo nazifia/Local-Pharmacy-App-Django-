@@ -362,15 +362,14 @@ class Receipt(models.Model):
         ('Wallet', 'Wallet'),
         ('Transfer', 'Transfer'),
     ], default='Cash')
+    status = models.CharField(max_length=20, choices=[
+        ('Paid', 'Paid'),
+        ('Unpaid', 'Unpaid'),
+    ], default='Unpaid')
 
     def __str__(self):
         name = self.customer.name if self.customer else "WALK-IN CUSTOMER"
         return f"Receipt {self.receipt_id} - {name} - {self.total_amount} on {self.date}"
-
-
-
-
-
 
 
 class WholesaleReceipt(models.Model):
@@ -387,11 +386,14 @@ class WholesaleReceipt(models.Model):
         ('Wallet', 'Wallet'),
         ('Transfer', 'Transfer'),
     ], default='Cash')
+    status = models.CharField(max_length=20, choices=[
+        ('Paid', 'Paid'),
+        ('Unpaid', 'Unpaid'),
+    ], default='Unpaid')
 
     def __str__(self):
         name = self.wholesale_customer.name if self.wholesale_customer else "WALK-IN CUSTOMER"
         return f"WholesaleReceipt {self.receipt_id} - {name} - {self.total_amount} on {self.date}"
-
 
 
         
@@ -516,6 +518,68 @@ def update_procurement_total(sender, instance, created, **kwargs):
     instance.procurement.calculate_total()
 
 @receiver(pre_delete, sender=ProcurementItem)
+def update_procurement_total_on_delete(sender, instance, **kwargs):
+    """Recalculate the procurement total after an item is deleted."""
+    instance.procurement.calculate_total()
+
+
+
+class WholesaleProcurement(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    def __str__(self):
+        return f'Procurement {self.supplier.name}'
+
+    def calculate_total(self):
+        """Calculate and update the total cost of the procurement."""
+        self.total = sum(item.subtotal for item in self.items.all())
+        self.save(update_fields=['total'])  # Ensure only 'total' field is updated
+
+
+class WholesaleProcurementItem(models.Model):
+    UNIT_CHOICES = [
+        ('PCS', 'Pieces'),
+        ('TAB', 'Tablets'),
+        ('CARD', 'Cards'),
+        ('TIN', 'Tins'),
+        ('BTL', 'Bottles'),
+        ('PCK', 'Packets'),
+        ('ROLL', 'Rolls'),
+        ('CTN', 'Cartons'),
+        ('AMP', 'Ampules'),
+        ('VAIL', 'Vial'),
+    ]
+
+    procurement = models.ForeignKey(WholesaleProcurement, related_name='items', on_delete=models.CASCADE)
+    item_name = models.CharField(max_length=255)
+    brand = models.CharField(max_length=225, null=True, blank=True, default='None')
+    unit = models.CharField(max_length=100, choices=UNIT_CHOICES)
+    quantity = models.PositiveIntegerField(default=0)
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, editable=False)  # Subtotal should not be editable.
+
+    def save(self, *args, **kwargs):
+        if self.cost_price is None or self.quantity is None:
+            raise ValueError("Both cost_price and quantity must be provided to calculate subtotal.")
+        
+        # Calculate subtotal
+        self.subtotal = self.cost_price * self.quantity
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.item_name} - {self.procurement.id}'
+
+
+# Signals to update total in Procurement after changes in ProcurementItem
+@receiver(post_save, sender=WholesaleProcurementItem)
+def update_procurement_total(sender, instance, created, **kwargs):
+    """Recalculate the procurement total after adding or updating an item."""
+    instance.procurement.calculate_total()
+
+@receiver(pre_delete, sender=WholesaleProcurementItem)
 def update_procurement_total_on_delete(sender, instance, **kwargs):
     """Recalculate the procurement total after an item is deleted."""
     instance.procurement.calculate_total()

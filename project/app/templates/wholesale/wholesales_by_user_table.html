@@ -1,0 +1,22 @@
+<table>
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Total Wholesale Sales</th>
+            <th>Total Items Sold</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sale in wholesale_user_sales %}
+        <tr>
+            <td>{{ sale.user__username|upper }}</td>
+            <td>₦{{ sale.total_wholesale_sales }}</td>
+            <td>{{ sale.total_items }} (Items)</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td style="text-align: center;" colspan="3">No sales found for the selected date range.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

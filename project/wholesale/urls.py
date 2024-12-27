@@ -31,4 +31,11 @@ urlpatterns = [
     path('wholesale_exp_alert/', views.wholesale_exp_alert, name='wholesale_exp_alert'),
     path('wholesale_receipt_list/', views.wholesale_receipt_list, name='wholesale_receipt_list'),
     path('wholesale_customer_history/<int:pk>/', views.wholesale_customer_history, name='wholesale_customer_history'),
+    path('search_wholesale_receipts/', views.search_wholesale_receipts, name='search_wholesale_receipts'),
+    path('add_wholesale_procurement/', views.add_wholesale_procurement, name='add_wholesale_procurement'),
+    path('wholesale_procurement_list/', views.wholesale_procurement_list, name='wholesale_procurement_list'),
+    path('wholesale_sales_by_user/', views.wholesale_sales_by_user, name='wholesale_sales_by_user'),
+    path('wholesale_sales_by_user/', views.wholesale_sales_by_user, name='wholesales_by_user_table'),
+    path('search_wholesale_procurement/', views.search_wholesale_procurement, name='search_wholesale_procurement'),
+    path('wholesale_procurement_detail/<int:procurement_id>/', views.wholesale_procurement_detail, name='wholesale_procurement_detail'),
 ]

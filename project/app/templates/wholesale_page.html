@@ -129,13 +129,18 @@
             </li>
 
             <li>
-                <a href="{% url 'wholesale_cart' %}">View Wholesale cart</a>
+                <a href="{% url 'wholesale_cart' %}">Dispense Wholesale</a>
             </li>
 
             <li>
                 <a href="{% url 'wholesale_receipt_list' %}" hx-get="{% url 'wholesale_receipt_list' %}"
                     hx-target="#display">Wholesale
                     Receipts</a>
+            </li>
+
+            <li>
+                <a href="{% url 'wholesale_sales_by_user' %}" hx-get="{% url 'wholesale_sales_by_user' %}"
+                    hx-target="#display">Wholesales_by_user</a>
             </li>
 
             <li>
@@ -153,6 +158,17 @@
                 <a href="{% url 'wholesale_exp_alert' %}" hx-get="{% url 'wholesale_exp_alert' %}"
                     hx-target="#display">Wholesale Exp Alert</a>
             </li>
+
+            <li>
+                <a href="{% url 'add_wholesale_procurement' %}" hx-get="{% url 'add_wholesale_procurement' %}"
+                    hx-target="#display">New Wholesale Procur</a>
+            </li>
+
+            <li>
+                <a href="{% url 'wholesale_procurement_list' %}" hx-get="{% url 'wholesale_procurement_list' %}"
+                    hx-target="#display">Wholesale Procur List</a>
+            </li>
+
         </ul>
     </div>
 
@@ -183,6 +199,8 @@
             </div>
         </div>
     </div>
+
+
 
     {% endblock %}
 </body>

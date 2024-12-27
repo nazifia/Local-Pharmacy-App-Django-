@@ -125,6 +125,20 @@
 
 <div class="col-md-10 offset-md-2">
     <h2>Procurement List</h2>
+
+    <!-- Search Form -->
+    <form method="get" action="" class="mb-3">
+        <div class="form-row">
+            <div class="col-md-4">
+                <input type="text" name="name" class="form-control" style="background-color: rgb(212, 248, 159);"
+                    hx-get="{% url 'search_procurement' %}" hx-target="#sales-data"
+                    hx-trigger="keyup changed delay:300ms" placeholder="Search by supplier name"
+                    value="{{ request.GET.name }}">
+            </div>
+
+        </div>
+    </form>
+
     <table>
         <thead>
             <tr>
@@ -149,12 +163,9 @@
                 <td>{{ procurement.calculated_total|floatformat:2 }}</td>
                 <td>{{ procurement.date }}</td>
                 <td>
-
                     <a href="{% url 'procurement_detail' procurement.id %}"
                         hx-get="{% url 'procurement_detail' procurement.id %}" hx-target="#sales-data">View Details</a>
-
                 </td>
-
             </tr>
             {% endfor %}
         </tbody>

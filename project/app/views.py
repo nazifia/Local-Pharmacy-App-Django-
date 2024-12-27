@@ -662,12 +662,144 @@ def clear_cart(request):
 
 
 
+# @login_required
+# def receipt(request):
+#     buyer_name = request.POST.get('buyer_name', '')
+#     buyer_address = request.POST.get('buyer_address', '')
+
+#     # Retrieve cart items
+#     cart_items = CartItem.objects.all()
+#     if not cart_items.exists():
+#         messages.warning(request, "No items in the cart.")
+#         return redirect('cart')
+
+#     total_price, total_discount = 0, 0
+
+#     # Calculate totals
+#     for cart_item in cart_items:
+#         subtotal = cart_item.item.price * cart_item.quantity
+#         total_price += subtotal
+#         total_discount += cart_item.discount_amount
+
+#     total_discounted_price = total_price - total_discount
+#     final_total = total_discounted_price if total_discount > 0 else total_price
+
+#     # Ensure a unique Sales instance
+#     sales = Sales.objects.filter(user=request.user, total_amount=final_total).first()
+#     if not sales:
+#         sales = Sales.objects.create(user=request.user, total_amount=final_total)
+
+#     try:
+#         # Ensure a unique Receipt for the Sales instance
+#         receipt = Receipt.objects.filter(sales=sales).first()
+#         if not receipt:
+#             # receipt view
+#             payment_method = request.POST.get('payment_method', 'Cash')  # Default to 'Cash' if not provided
+#             receipt = Receipt.objects.create(
+#                 sales=sales,
+#                 receipt_id=uuid.uuid4(),
+#                 total_amount=final_total,
+#                 buyer_name=buyer_name if not sales.customer else None,
+#                 buyer_address=buyer_address,
+#                 date=now(),
+#                 payment_method=payment_method  # Save payment method
+#                 )
+
+#     except Exception as e:
+#         print(f"Error processing receipt: {e}")
+#         messages.error(request, "An error occurred while processing the receipt.")
+#         return redirect('cart')
+
+#     # Process cart items
+#     for cart_item in cart_items:
+#         SalesItem.objects.get_or_create(
+#             sales=sales,
+#             item=cart_item.item,
+#             defaults={'quantity': cart_item.quantity, 'price': cart_item.item.price}
+#         )
+
+#         # Create DispensingLog
+#         subtotal = cart_item.item.price * cart_item.quantity
+#         DispensingLog.objects.create(
+#             user=request.user,
+#             name=cart_item.item.name,
+#             unit=cart_item.item.unit,
+#             quantity=cart_item.quantity,
+#             amount=subtotal,
+#             status="Dispensed"
+#         )
+
+#     # Save receipt data in session
+#     request.session['receipt_data'] = {
+#         'total_price': float(total_price),
+#         'total_discount': float(total_discount),
+#         'buyer_address': buyer_address,
+#     }
+#     request.session['receipt_id'] = str(receipt.receipt_id)
+
+#     # Clear cart
+#     cart_items.delete()
+
+#     daily_sales_data = get_daily_sales()
+#     monthly_sales_data = get_monthly_sales()
+
+#     sales_items = sales.sales_items.all()
+    
+#     payment_methods = ["Cash", "Wallet", "Transfer"]
+#     # receipt = get_object_or_404(Receipt, id=request.session.get('receipt_id'))  # Example
+    
+#     return render(request, 'receipt.html', {
+#     'receipt': receipt,
+#     'sales_items': sales_items,
+#     'total_price': total_price,
+#     'total_discount': total_discount,
+#     'total_discounted_price': total_discounted_price,
+#     'daily_sales': daily_sales_data,
+#     'monthly_sales': monthly_sales_data,
+#     'logs': DispensingLog.objects.filter(user=request.user),
+#     'payment_methods': payment_methods,
+# })
+
+
+
+
+@login_required
+def customer_receipt(request, customer_id):
+    customer = get_object_or_404(Customer, id=customer_id)
+    receipt_data = request.session.pop('receipt_data', None)
+    receipt_id = request.session.pop('receipt_id', None)
+
+    if not receipt_data:
+        return redirect('select_items', pk=customer_id)
+
+    receipt, created = Receipt.objects.get_or_create(
+        receipt_id=receipt_id,
+        customer=customer,
+        defaults={
+            'total_amount': receipt_data.get('total_price', 0),
+            'buyer_name': customer.name,
+            'buyer_address': receipt_data.get('buyer_address', ""),
+            'date': timezone.now(),
+            'status': 'Paid' if request.POST.get('status', 'Paid') == 'Paid' else 'Unpaid'
+        }
+    )
+
+    context = {
+        'customer': customer,
+        'receipt_data': receipt_data,
+        'date': timezone.now(),
+        'receipt': receipt,
+        'created': created
+    }
+
+    return render(request, 'partials/customer_receipt.html', context)
+
+
 @login_required
 def receipt(request):
     buyer_name = request.POST.get('buyer_name', '')
     buyer_address = request.POST.get('buyer_address', '')
 
-    # Retrieve cart items
     cart_items = CartItem.objects.all()
     if not cart_items.exists():
         messages.warning(request, "No items in the cart.")
@@ -675,7 +807,6 @@ def receipt(request):
 
     total_price, total_discount = 0, 0
 
-    # Calculate totals
     for cart_item in cart_items:
         subtotal = cart_item.item.price * cart_item.quantity
         total_price += subtotal
@@ -684,17 +815,15 @@ def receipt(request):
     total_discounted_price = total_price - total_discount
     final_total = total_discounted_price if total_discount > 0 else total_price
 
-    # Ensure a unique Sales instance
     sales = Sales.objects.filter(user=request.user, total_amount=final_total).first()
     if not sales:
         sales = Sales.objects.create(user=request.user, total_amount=final_total)
 
     try:
-        # Ensure a unique Receipt for the Sales instance
         receipt = Receipt.objects.filter(sales=sales).first()
         if not receipt:
-            # receipt view
-            payment_method = request.POST.get('payment_method', 'Cash')  # Default to 'Cash' if not provided
+            payment_method = request.POST.get('payment_method', 'Cash')
+            status = request.POST.get('status', 'Paid')  # Default to 'Paid'
             receipt = Receipt.objects.create(
                 sales=sales,
                 receipt_id=uuid.uuid4(),
@@ -702,15 +831,15 @@ def receipt(request):
                 buyer_name=buyer_name if not sales.customer else None,
                 buyer_address=buyer_address,
                 date=now(),
-                payment_method=payment_method  # Save payment method
-                )
+                payment_method=payment_method,
+                status=status
+            )
 
     except Exception as e:
         print(f"Error processing receipt: {e}")
         messages.error(request, "An error occurred while processing the receipt.")
         return redirect('cart')
 
-    # Process cart items
     for cart_item in cart_items:
         SalesItem.objects.get_or_create(
             sales=sales,
@@ -718,7 +847,6 @@ def receipt(request):
             defaults={'quantity': cart_item.quantity, 'price': cart_item.item.price}
         )
 
-        # Create DispensingLog
         subtotal = cart_item.item.price * cart_item.quantity
         DispensingLog.objects.create(
             user=request.user,
@@ -729,7 +857,6 @@ def receipt(request):
             status="Dispensed"
         )
 
-    # Save receipt data in session
     request.session['receipt_data'] = {
         'total_price': float(total_price),
         'total_discount': float(total_discount),
@@ -737,7 +864,6 @@ def receipt(request):
     }
     request.session['receipt_id'] = str(receipt.receipt_id)
 
-    # Clear cart
     cart_items.delete()
 
     daily_sales_data = get_daily_sales()
@@ -746,19 +872,20 @@ def receipt(request):
     sales_items = sales.sales_items.all()
     
     payment_methods = ["Cash", "Wallet", "Transfer"]
-    # receipt = get_object_or_404(Receipt, id=request.session.get('receipt_id'))  # Example
-    
+    statuses = ["Paid", "Unpaid"]
+
     return render(request, 'receipt.html', {
-    'receipt': receipt,
-    'sales_items': sales_items,
-    'total_price': total_price,
-    'total_discount': total_discount,
-    'total_discounted_price': total_discounted_price,
-    'daily_sales': daily_sales_data,
-    'monthly_sales': monthly_sales_data,
-    'logs': DispensingLog.objects.filter(user=request.user),
-    'payment_methods': payment_methods,
-})
+        'receipt': receipt,
+        'sales_items': sales_items,
+        'total_price': total_price,
+        'total_discount': total_discount,
+        'total_discounted_price': total_discounted_price,
+        'daily_sales': daily_sales_data,
+        'monthly_sales': monthly_sales_data,
+        'logs': DispensingLog.objects.filter(user=request.user),
+        'payment_methods': payment_methods,
+        'statuses': statuses,
+    })
 
 
 
@@ -773,25 +900,59 @@ def receipt_list(request):
 
 
 
+def search_receipts(request):
+    from datetime import datetime, timedelta
+
+    # Get the date query from the GET request
+    date_query = request.GET.get('date', '').strip()
+
+    # Debugging log
+    print(f"Date Query: {date_query}")
+
+    receipts = Receipt.objects.all()
+    if date_query:
+        try:
+            # Parse date query
+            date_object = datetime.strptime(date_query, '%Y-%m-%d').date()
+            # Adjust filtering for DateTimeField (if necessary)
+            receipts = receipts.filter(date__date=date_object)
+        except ValueError:
+            print("Invalid date format")
+
+    # Order receipts by date
+    receipts = receipts.order_by('-date')
+
+    # Debugging log for queryset
+    print(f"Filtered Receipts: {receipts.query}")
+
+    return render(request, 'partials/search_receipts.html', {'receipts': receipts})
+
+
+
+
 @login_required
 def receipt_detail(request, receipt_id):
     # Retrieve the existing receipt
     receipt = get_object_or_404(Receipt, receipt_id=receipt_id)
 
-    # If the form is submitted, update buyer details
+    # If the form is submitted, update buyer details and other fields
     if request.method == 'POST':
         buyer_name = request.POST.get('buyer_name')
         buyer_address = request.POST.get('buyer_address')
+        payment_method = request.POST.get('payment_method')
+        payment_status = request.POST.get('payment_status')  # New: Capture payment status
 
         # Update receipt buyer info if provided
         if buyer_name:
             receipt.buyer_name = buyer_name
         if buyer_address:
             receipt.buyer_address = buyer_address
-        
-        payment_method = request.POST.get('payment_method')
         if payment_method:
             receipt.payment_method = payment_method
+        if payment_status:
+            receipt.paid = (payment_status == 'Paid')  # Update Paid/Unpaid status
+
+        # Save the updated receipt
         receipt.save()
 
         # Redirect to the same page to reflect updated details
@@ -808,9 +969,9 @@ def receipt_detail(request, receipt_id):
 
     # Update and save the receipt with calculated totals
     receipt.total_amount = total_discounted_price
-    receipt.total_discount = total_discount
     receipt.save()
 
+    # Render the receipt details template
     return render(request, 'partials/receipt_detail.html', {
         'receipt': receipt,
         'sales_items': sales_items,
@@ -818,6 +979,7 @@ def receipt_detail(request, receipt_id):
         'total_discount': total_discount,
         'total_discounted_price': total_discounted_price,
     })
+
 
 
 
@@ -1005,6 +1167,94 @@ def monthly_sales(request):
     return render(request, 'monthly_sales.html', context)
 
 
+
+def get_sales_by_user(date_from=None, date_to=None):
+    # Filter sales by date range if provided
+    filters = Q()
+    if date_from:
+        filters &= Q(date__gte=date_from)
+    if date_to:
+        filters &= Q(date__lte=date_to)
+
+    # Aggregating sales for each user
+    sales_by_user = (
+        Sales.objects.filter(filters)
+        .values('user__username')  # Group by user
+        .annotate(
+            total_sales=Sum('total_amount'),  # Sum of total amounts
+            total_items=Sum(F('sales_items__quantity') )  # Sum of all quantities sold
+        )
+        .order_by('-total_sales')  # Sort by total sales in descending order
+    )
+    return sales_by_user
+
+
+
+
+@user_passes_test(is_admin)
+def sales_by_user(request):
+    # Get the date filters from the request
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    # Parse dates if provided
+    date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else None
+    date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else None
+
+    # Fetch sales data
+    user_sales = get_sales_by_user(date_from=date_from, date_to=date_to)
+    
+
+    context = {
+        'user_sales': user_sales,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    return render(request, 'partials/sales_by_user.html', context)
+
+
+# @login_required
+# def sales_by_user(request):
+#     user = request.user
+#     date_from = request.GET.get('date_from')
+#     date_to = request.GET.get('date_to')
+
+#     # Parse date inputs
+#     date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else None
+#     date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else None
+
+#     # Filter sales records
+#     sales_query = Q(user=user)
+#     if date_from:
+#         sales_query &= Q(date__gte=date_from)
+#     if date_to:
+#         sales_query &= Q(date__lte=date_to)
+
+#     # Get regular sales
+#     sales = Sales.objects.filter(sales_query, wholesale_customer__isnull=True)
+#     total_regular_sales = sales.aggregate(total=Sum('total_amount'))['total'] or 0
+
+#     # Get wholesale sales
+#     wholesale_sales = Sales.objects.filter(sales_query, wholesale_customer__isnull=False)
+#     total_wholesale_sales = wholesale_sales.aggregate(total=Sum('total_amount'))['total'] or 0
+
+#     # Combined total
+#     combined_total = total_regular_sales + total_wholesale_sales
+
+#     context = {
+#         'sales': sales,
+#         'wholesale_sales': wholesale_sales,
+#         'total_regular_sales': total_regular_sales,
+#         'total_wholesale_sales': total_wholesale_sales,
+#         'combined_total': combined_total,
+#         'date_from': date_from,
+#         'date_to': date_to,
+#     }
+
+#     return render(request, 'partials/sales_by_user.html', context)
+
+
+
 @login_required
 def register_customers(request):
     if request.method == 'POST':
@@ -1101,38 +1351,38 @@ def reset_wallet(request, pk):
 
 
 
-@login_required
-def customer_receipt(request, customer_id):
-    customer = get_object_or_404(Customer, id=customer_id)
-    receipt_data = request.session.pop('receipt_data', None)
-    receipt_id = request.session.pop('receipt_id', None)
+# @login_required
+# def customer_receipt(request, customer_id):
+#     customer = get_object_or_404(Customer, id=customer_id)
+#     receipt_data = request.session.pop('receipt_data', None)
+#     receipt_id = request.session.pop('receipt_id', None)
 
-    # Redirect to 'select_items' if no receipt data exists in the session
-    if not receipt_data:
-        return redirect('select_items', pk=customer_id)
+#     # Redirect to 'select_items' if no receipt data exists in the session
+#     if not receipt_data:
+#         return redirect('select_items', pk=customer_id)
 
-    # Retrieve or create a receipt to avoid duplication
-    receipt, created = Receipt.objects.get_or_create(
-        receipt_id=receipt_id,
-        customer=customer,
-        defaults={
-            'total_amount': receipt_data.get('total_price', 0),
-            'buyer_name': customer.name,
-            'buyer_address': receipt_data.get('buyer_address', ""),
-            'date': timezone.now()
-        }
-    )
+#     # Retrieve or create a receipt to avoid duplication
+#     receipt, created = Receipt.objects.get_or_create(
+#         receipt_id=receipt_id,
+#         customer=customer,
+#         defaults={
+#             'total_amount': receipt_data.get('total_price', 0),
+#             'buyer_name': customer.name,
+#             'buyer_address': receipt_data.get('buyer_address', ""),
+#             'date': timezone.now()
+#         }
+#     )
 
-    # Prepare context for rendering
-    context = {
-        'customer': customer,
-        'receipt_data': receipt_data,
-        'date': timezone.now(),
-        'receipt': receipt,
-        'created': created
-    }
+#     # Prepare context for rendering
+#     context = {
+#         'customer': customer,
+#         'receipt_data': receipt_data,
+#         'date': timezone.now(),
+#         'receipt': receipt,
+#         'created': created
+#     }
 
-    return render(request, 'partials/customer_receipt.html', context)
+#     return render(request, 'partials/customer_receipt.html', context)
 
 
 @login_required
@@ -1304,10 +1554,28 @@ def procurement_list(request):
     })
 
 
+
+def search_procurement(request):
+    # Base query with calculated total and ordering
+    procurements = (
+        Procurement.objects.annotate(calculated_total=Sum('items__subtotal'))
+        .order_by('-date')
+    )
+
+    # Get search parameters from the request
+    name_query = request.GET.get('name', '').strip()
+
+    # Apply filters if search parameters are provided
+    if name_query:
+        procurements = procurements.filter(supplier__name__icontains=name_query)
+
+    # Render the filtered results
+    return render(request, 'partials/search_procurement.html', {
+        'procurements': procurements,
+    })
+    
+
 @login_required
-# def procurement_detail(request, procurement_id):
-#     procurement = get_object_or_404(Procurement, id=procurement_id)
-#     return render(request, 'partials/procurement_detail.html', {'procurement': procurement})
 def procurement_detail(request, procurement_id):
     procurement = get_object_or_404(Procurement, id=procurement_id)
 

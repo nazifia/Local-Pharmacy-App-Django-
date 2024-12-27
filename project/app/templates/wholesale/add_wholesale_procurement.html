@@ -2,13 +2,13 @@
 <style>
     /* General Form Styling */
     form {
-        margin-left: 8em;
+        margin-left: 9em;
         margin-top: 1em;
         padding: 20px;
         border: 1px solid #ddd;
         border-radius: 5px;
         background-color: #f9f9f9;
-        width: 92%;
+        width: 90%;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
@@ -99,9 +99,8 @@
         }
     }
 </style>
-
-<p style="text-align: center;"><strong>Retail Procurement Form</strong></p>
-<form method="post" action="{% url 'add_procurement' %}">
+<p style="text-align: center;"><strong>Wholesale Procurement Form</strong></p>
+<form method="post" action="{% url 'add_wholesale_procurement' %}">
     {% csrf_token %}
 
     <!-- Procurement Form -->

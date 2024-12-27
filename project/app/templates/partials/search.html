@@ -12,6 +12,7 @@
             class="btn btn-sm btn-danger">x</a>
     </td>
     <td>{{item.name}}</td>
+    <td>{{item.brand}}</td>
     <td>{{item.unit}}</td>
     {% if user.is_superuser %}
     <td>{{item.cost}}</td>
@@ -25,9 +26,3 @@
     <td colspan="6" style="text-align: center;">No item found matching "{{ request.GET.search }}"</td>
 </tr>
 {% endfor %}
-
-
-
-<tbody id="item-list">
-
-</tbody>

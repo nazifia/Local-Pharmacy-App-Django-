@@ -1,5 +1,7 @@
 from django import forms
 from app.models import *
+from django.forms import modelformset_factory
+
 
 
 class addWholesaleForm(forms.ModelForm):
@@ -39,3 +41,43 @@ class WholesaleCustomerForm(forms.ModelForm):
 
 class WholesaleCustomerAddFundsForm(forms.Form):
     amount = forms.DecimalField(max_digits=10, decimal_places=2)
+
+
+
+
+class WholesaleProcurementForm(forms.ModelForm):
+    class Meta:
+        model = WholesaleProcurement
+        fields = ['supplier', 'date']
+        widgets = {
+            'supplier': forms.Select(attrs={'placeholder': 'Select supplier'}),
+            'date': forms.DateInput(attrs={'placeholder': 'Select date', 'type': 'date'}),
+        }
+        labels = {
+            'supplier': 'Supplier',
+            'date': 'Date',
+        }
+
+
+
+
+class WholesaleProcurementItemForm(forms.ModelForm):
+    class Meta:
+        model = WholesaleProcurementItem
+        fields = ['item_name', 'brand', 'unit', 'quantity', 'cost_price']
+        widgets = {
+            'item_name': forms.TextInput(attrs={'placeholder': 'Enter item name'}),
+            'brand': forms.TextInput(attrs={'placeholder': 'Enter brand name'}),
+            'unit': forms.Select(attrs={'placeholder': 'Select unit'}),
+            'quantity': forms.NumberInput(attrs={'placeholder': 'Enter quantity'}),
+            'cost_price': forms.NumberInput(attrs={'placeholder': 'Enter cost price'}),
+        }
+        labels = {
+            'item_name': 'Item Name',
+            'brand': 'Brand',
+            'unit': 'Unit',
+            'quantity': 'Quantity',
+            'cost_price': 'Cost Price',
+        }
+
+ProcurementItemFormSet = modelformset_factory(ProcurementItem, form=WholesaleProcurementItemForm, extra=0)
