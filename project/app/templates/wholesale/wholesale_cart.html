@@ -139,7 +139,7 @@
                         <form action="{% url 'wholesale_cart' %}" method="post">
                             {% csrf_token %}
                             <!-- Use unique input name for each item using cart_item.id -->
-                            <input type="number" name="discount_amount-{{ cart_item.id }}"
+                            <input type="number" step="0.01" name="discount_amount-{{ cart_item.id }}"
                                 value="{{ cart_item.discount_amount }}" id="discount_amount" min="0"
                                 style="width: 70px; border-radius: 3px;">
                             <button class="btn btn-outline-info btn-sm mb-2" type="submit">Discount</button>

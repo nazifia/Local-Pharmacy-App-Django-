@@ -147,6 +147,7 @@
                     {% else %}
                     <button type="button" class="btn btn-danger btn-sm remove-item"
                         onclick="removeRow(this)">Remove</button>
+
                     {% endif %}
                 </td>
             </tr>
@@ -161,31 +162,50 @@
 
 <script>
     document.getElementById('add-item').addEventListener('click', function () {
-        const table = document.getElementById('item-formset');
+        const tableBody = document.querySelector('#item-formset tbody');
         const totalForms = document.querySelector('input[name="form-TOTAL_FORMS"]');
-        const formIdx = totalForms.value;
-        const newRow = table.querySelector('.form-row').cloneNode(true);
+        const formIdx = parseInt(totalForms.value);
+
+        // Clone the last form row to create a new one
+        const newRow = tableBody.querySelector('tr:last-child').cloneNode(true);
 
         newRow.querySelectorAll('input, select').forEach(input => {
-            input.name = input.name.replace(`-${formIdx - 1}-`, `-${formIdx}-`);
-            input.id = input.id.replace(`-${formIdx - 1}-`, `-${formIdx}-`);
-            if (input.type !== 'hidden') input.value = ''; // Clear form values
+            const nameAttr = input.name.replace(/-\d+-/, `-${formIdx}-`);
+            const idAttr = input.id.replace(/-\d+-/, `-${formIdx}-`);
+
+            input.name = nameAttr;
+            input.id = idAttr;
+
+            if (input.type !== 'hidden') input.value = ''; // Clear input values for new row
         });
 
-        // Add an empty "Actions" cell with Remove button
-        const actionsCell = newRow.querySelector('td:last-child');
-        actionsCell.innerHTML = '<button type="button" class="btn btn-danger btn-sm remove-item" onclick="removeRow(this)">Remove</button>';
+        // Update the management form total
+        totalForms.value = formIdx + 1;
 
-        totalForms.value = parseInt(formIdx) + 1;
-        table.appendChild(newRow);
+        // Add the new row to the table body
+        tableBody.appendChild(newRow);
     });
 
-    // Remove the form row
+    // Remove a dynamically added row
     function removeRow(button) {
         const row = button.closest('tr');
-        row.remove();
         const totalForms = document.querySelector('input[name="form-TOTAL_FORMS"]');
-        totalForms.value = parseInt(totalForms.value) - 1;
+
+        // Update the management form total only if the row is successfully removed
+        if (row) {
+            row.remove();
+            totalForms.value = parseInt(totalForms.value) - 1;
+
+            // Re-index remaining rows to avoid index gaps
+            const rows = document.querySelectorAll('#item-formset tbody tr');
+            rows.forEach((row, index) => {
+                row.querySelectorAll('input, select').forEach(input => {
+                    input.name = input.name.replace(/-\d+-/, `-${index}-`);
+                    input.id = input.id.replace(/-\d+-/, `-${index}-`);
+                });
+            });
+        }
     }
+
 </script>
 {% endblock %}
